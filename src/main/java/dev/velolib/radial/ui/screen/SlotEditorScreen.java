@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
@@ -113,7 +114,6 @@ public class SlotEditorScreen extends Screen {
         mainLayout.addChild(modeGroup);
 
         // --- ROW 3: Dynamic Container ---
-        // Also reduced to 8 to match main vertical gaps
         LinearLayout dynamicLayoutContainer = LinearLayout.vertical().spacing(8);
         slot.mode.buildEditorWidgets(this, slot, contentWidth, dynamicLayoutContainer);
         mainLayout.addChild(dynamicLayoutContainer);
@@ -138,6 +138,27 @@ public class SlotEditorScreen extends Screen {
 
         mainLayout.addChild(actionGroup);
 
+        // --- ROW 5: Slot Management ---
+        LinearLayout managementGroup = LinearLayout.horizontal().spacing(HORIZ_GAP);
+        int mgmtBtnWidth = (contentWidth - HORIZ_GAP * 2) / 3;
+
+        Button copyBtn = Button.builder(Component.literal("Copy"), _ -> copyToClipboard())
+                .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
+                .build();
+        managementGroup.addChild(copyBtn);
+
+        Button pasteBtn = Button.builder(Component.literal("Paste"), _ -> pasteFromClipboard())
+                .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
+                .build();
+        managementGroup.addChild(pasteBtn);
+
+        Button resetBtn = Button.builder(Component.literal("Reset"), _ -> resetSlot())
+                .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
+                .build();
+        managementGroup.addChild(resetBtn);
+
+        mainLayout.addChild(managementGroup);
+
         // --- FINAL ASSEMBLY ---
         FrameLayout rootLayout = new FrameLayout();
         rootLayout.addChild(mainLayout);
@@ -146,6 +167,88 @@ public class SlotEditorScreen extends Screen {
         // Offset the Y position down by 20 to ensure room at the top of the screen for the icon
         FrameLayout.centerInRectangle(rootLayout, 0, 20, width, height);
         rootLayout.visitWidgets(this::addRenderableWidget);
+    }
+
+    private void copyToClipboard() {
+        try {
+            String json = RadialConfig.GSON.toJson(this.slot);
+            this.minecraft.keyboardHandler.setClipboard(json);
+            SystemToast.add(
+                    this.minecraft.gui.toastManager(),
+                    SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                    Component.literal("Slot Copied"),
+                    Component.literal("Slot data copied to clipboard.")
+            );
+        } catch (Exception e) {
+            SystemToast.add(
+                    this.minecraft.gui.toastManager(),
+                    SystemToast.SystemToastId.PACK_COPY_FAILURE,
+                    Component.literal("Copy Failed"),
+                    Component.literal(e.getMessage() != null ? e.getMessage() : "Unknown error")
+            );
+        }
+    }
+
+    private void pasteFromClipboard() {
+        try {
+            String json = this.minecraft.keyboardHandler.getClipboard();
+            if (json.trim().isEmpty()) {
+                throw new IllegalArgumentException("Clipboard is empty!");
+            }
+
+            RadialSlot pasted = RadialConfig.GSON.fromJson(json, RadialSlot.class);
+            if (pasted == null) {
+                throw new IllegalArgumentException("Invalid slot JSON format!");
+            }
+
+            // Validation & Fallbacks
+            if (pasted.name == null) pasted.name = "";
+            if (pasted.mode == null) pasted.mode = SlotModeRegistry.getDefaultMode();
+            if (pasted.value == null) pasted.value = "";
+            if (pasted.itemId == null) pasted.itemId = "minecraft:air";
+
+            // Apply directly onto current slot reference
+            this.slot.name = pasted.name;
+            this.slot.mode = pasted.mode;
+            this.slot.value = pasted.value;
+            this.slot.itemId = pasted.itemId;
+            this.slot.childSlotCount = pasted.childSlotCount;
+            if (pasted.children != null) {
+                this.slot.children = new java.util.ArrayList<>(pasted.children);
+            } else {
+                this.slot.children = null;
+            }
+            this.slot.clearCache();
+
+            // Screen native rebuild function refreshes UI with new values
+            this.rebuildWidgets();
+
+            SystemToast.add(
+                    this.minecraft.gui.toastManager(),
+                    SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                    Component.literal("Slot Pasted"),
+                    Component.literal("Successfully updated slot data.")
+            );
+        } catch (Exception e) {
+            SystemToast.add(
+                    this.minecraft.gui.toastManager(),
+                    SystemToast.SystemToastId.PACK_COPY_FAILURE,
+                    Component.literal("Paste Failed"),
+                    Component.literal(e.getMessage() != null ? e.getMessage() : "Unknown error")
+            );
+        }
+    }
+
+    private void resetSlot() {
+        this.slot.name = "";
+        this.slot.mode = SlotModeRegistry.getDefaultMode();
+        this.slot.value = "";
+        this.slot.itemId = "minecraft:air";
+        this.slot.childSlotCount = 8;
+        this.slot.children = null;
+        this.slot.clearCache();
+
+        this.rebuildWidgets();
     }
 
     @Override
@@ -209,11 +312,11 @@ public class SlotEditorScreen extends Screen {
                 floatingMenu.mouseClicked(click, doubled);
                 return true;
             } else //noinspection StatementWithEmptyBody
-            if (this.modeDropdown.isMouseOver(click.x(), click.y())) {
-                // Let the click fall through so the button can close itself
-            } else {
-                this.modeDropdown.closeMenu();
-            }
+                if (this.modeDropdown.isMouseOver(click.x(), click.y())) {
+                    // Let the click fall through so the button can close itself
+                } else {
+                    this.modeDropdown.closeMenu();
+                }
         }
 
         return super.mouseClicked(click, doubled);

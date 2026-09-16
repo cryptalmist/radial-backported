@@ -32,7 +32,8 @@ public class RadialConfig {
     private static final File TEMP_FILE =
             FabricLoader.getInstance().getConfigDir().resolve("radial.json.tmp").toFile();
 
-    private static final Gson GSON = new GsonBuilder()
+    // Changed from private to public for clipboard usage
+    public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(Color.class, new ColorTypeAdapter())
             .registerTypeAdapter(SlotMode.class, new SlotModeTypeAdapter())
