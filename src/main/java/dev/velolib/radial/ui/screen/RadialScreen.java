@@ -55,6 +55,7 @@ public class RadialScreen extends Screen {
     private int hoveredSlot = -1;
 
     private double revealElapsedSeconds = 0.0;
+    private double menuElapsedSeconds = 0.0;
     private long lastNano;
 
     public RadialScreen() {
@@ -194,7 +195,9 @@ public class RadialScreen extends Screen {
         if (lastNano == 0) lastNano = now;
         float dt = (float) Math.min((now - lastNano) / 1.0e9, 0.1);
         lastNano = now;
+
         revealElapsedSeconds += dt;
+        menuElapsedSeconds += dt;
 
         int cx = width / 2;
         int cy = height / 2;
@@ -339,7 +342,7 @@ public class RadialScreen extends Screen {
         RadialConfig.RevealAnimation animation = config.revealAnimation;
 
         if (animation == RadialConfig.RevealAnimation.ZOOM || count <= 1) {
-            return Mth.clamp((float) (revealElapsedSeconds / totalDuration), 0.0F, 1.0F);
+            return Mth.clamp((float) (menuElapsedSeconds / totalDuration), 0.0F, 1.0F);
         }
 
         int staggerCount = (animation == RadialConfig.RevealAnimation.STAGGERED_BOTH) ? (count / 2) + 1 : count;
@@ -347,7 +350,7 @@ public class RadialScreen extends Screen {
         float elementDuration = Math.max(0.001F, totalDuration - step * (staggerCount - 1));
 
         return Mth.clamp(
-                ((float) revealElapsedSeconds - (step * getStaggerIndex(index, count, animation))) / elementDuration,
+                ((float) menuElapsedSeconds - (step * getStaggerIndex(index, count, animation))) / elementDuration,
                 0.0F,
                 1.0F);
     }
@@ -441,7 +444,7 @@ public class RadialScreen extends Screen {
                         ? 0
                         : -1;
 
-        revealElapsedSeconds = 0.0;
+        menuElapsedSeconds = 0.0;
         lastNano = System.nanoTime();
     }
 
