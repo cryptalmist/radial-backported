@@ -236,7 +236,10 @@ public class RadialScreen extends Screen {
         // 5. Render Sectors (Background Ring)
         if (config.showActivationZone) {
             for (int i = 0; i < renderCount; i++) {
-                float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * pushAnim[i] : 0.0F;
+                // Apply the easing curve to the background sectors
+                float smoothedHover = easeOutCubic(pushAnim[i]);
+                float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * smoothedHover : 0.0F;
+
                 float slotAngle = (float) ((Math.PI * 2.0 / renderCount) * i - Math.PI / 2.0);
                 float revealEase = easeOutQuint(getRevealProgress(i, renderCount, config));
 
@@ -254,15 +257,16 @@ public class RadialScreen extends Screen {
             int revealAlpha = Mth.clamp((int) (revealEase * 255.0F + 0.5F), 0, 255);
             if (revealAlpha <= 0) continue;
 
+            float smoothedHover = easeOutCubic(pushAnim[i]);
             float slotAngle = (float) ((Math.PI * 2.0 / renderCount) * i - Math.PI / 2.0);
-            float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * pushAnim[i] : 0.0F;
+            float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * smoothedHover : 0.0F;
             float finalRadius = (config.slotRadius * revealEase) + (hoverPush * revealEase);
 
             float slotX = (float) (cx + Math.cos(slotAngle) * finalRadius);
             float slotY = (float) (cy + Math.sin(slotAngle) * finalRadius);
 
             float scale = revealEase
-                    * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * (i == hoveredSlot ? 1.0F : 0.0F) : 1.0F);
+                    * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * smoothedHover : 1.0F);
 
             graphics.pose().pushMatrix();
             graphics.pose().translate(slotX, slotY);
@@ -357,6 +361,12 @@ public class RadialScreen extends Screen {
         value = Mth.clamp(value, 0.0F, 1.0F);
         float inverse = 1.0F - value;
         return 1.0F - inverse * inverse * inverse * inverse * inverse;
+    }
+
+    public float easeOutCubic(float value) {
+        value = Mth.clamp(value, 0.0F, 1.0F);
+        float inverse = 1.0F - value;
+        return 1.0F - inverse * inverse * inverse;
     }
 
     // --- Input & Actions ---
