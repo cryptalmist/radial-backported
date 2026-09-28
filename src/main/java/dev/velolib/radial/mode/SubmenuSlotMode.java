@@ -4,18 +4,23 @@ import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotActionContext;
 import dev.velolib.radial.api.SlotModeRegistry;
 import dev.velolib.radial.mode.base.IconEnabledSlotMode;
-import dev.velolib.radial.ui.screen.SlotEditorScreen;
 import java.util.ArrayList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class SubmenuSlotMode extends IconEnabledSlotMode {
     @Override
     public Component getTranslatedName() {
         return Component.translatable("radial.mode.submenu");
+    }
+
+    @Override
+    public boolean isMacroAction() {
+        return false; // Submenus need the radial menu to be open
     }
 
     @Override
@@ -43,7 +48,7 @@ public class SubmenuSlotMode extends IconEnabledSlotMode {
     }
 
     @Override
-    public void buildEditorWidgets(SlotEditorScreen screen, RadialSlot slot, int width, LinearLayout container) {
+    public void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container) {
         int ROW_HEIGHT = 20;
 
         LinearLayout subGroup = LinearLayout.vertical().spacing(2);

@@ -164,7 +164,9 @@ public abstract class GridIconTab<T> implements IconTab {
 
         @Override
         public @NonNull Component getNarration() {
-            return items.isEmpty() ? Component.literal("Empty row") : getItemNarration(items.getFirst());
+            return items.isEmpty()
+                    ? Component.translatable("screen.radial.editor.icon_picker.empty_row")
+                    : getItemNarration(items.getFirst());
         }
     }
 }

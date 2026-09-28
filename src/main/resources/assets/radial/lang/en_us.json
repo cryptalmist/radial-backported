@@ -5,6 +5,7 @@
   "key.category.radial.main": "Radial",
   "key.radial.open": "Open Radial",
   "key.radial.back": "Go Back (Submenu)",
+  "key.radial.stop_macros": "Stop All Macros",
   "key.radial.slot.1": "Activate Slot 1",
   "key.radial.slot.2": "Activate Slot 2",
   "key.radial.slot.3": "Activate Slot 3",
@@ -19,13 +20,17 @@
   "key.radial.slot.12": "Activate Slot 12",
 
   "radial.ui.back": "Back",
+  "radial.macro.stopped": "Macros stopped: %s",
+  "radial.item.invalid_id": "Invalid Item ID",
 
   "radial.mode.empty": "Do Nothing",
+  "radial.mode.delay": "Add Delay",
   "radial.mode.chat": "Send Chat / Command",
   "radial.mode.keybind": "Trigger Game Keybind",
   "radial.mode.shortcut": "Open Screen Shortcut",
   "radial.mode.malilib": "Trigger MaLiLib Hotkey",
   "radial.mode.submenu": "Open Submenu",
+  "radial.mode.macro": "Run Macro",
 
   "screen.radial.editor.title": "Edit Radial Slot",
   "screen.radial.editor.name": "Slot Name",
@@ -34,28 +39,64 @@
   "screen.radial.editor.icon": "Icon Identifier",
   "screen.radial.editor.submenu": "Submenu Size",
   "screen.radial.editor.submenu.placeholder": "Submenu Size: %s",
+  "screen.radial.editor.macro": "Macro Actions",
+  "screen.radial.editor.macro.edit": "Edit Actions (%s/%s)",
   "screen.radial.editor.save": "Save & Close",
   "screen.radial.editor.cancel": "Cancel",
   "screen.radial.editor.browse": "Icons",
   "screen.radial.editor.hand": "Hand",
   "screen.radial.editor.select": "Select",
   "screen.radial.editor.search": "Search...",
+  "screen.radial.editor.copy": "Copy",
+  "screen.radial.editor.paste": "Paste",
+  "screen.radial.editor.reset": "Reset",
+  "screen.radial.editor.toast.copied": "Slot Copied",
+  "screen.radial.editor.toast.copied.desc": "Slot data copied to clipboard.",
+  "screen.radial.editor.toast.copy_failed": "Copy Failed",
+  "screen.radial.editor.toast.pasted": "Slot Pasted",
+  "screen.radial.editor.toast.pasted.desc": "Successfully updated slot data.",
+  "screen.radial.editor.toast.paste_failed": "Paste Failed",
+  "screen.radial.editor.error.empty_clipboard": "Clipboard is empty!",
+  "screen.radial.editor.error.invalid_json": "Invalid slot JSON format!",
+  "screen.radial.editor.error.unknown": "Unknown error",
   "screen.radial.editor.icon_picker.items": "Items",
   "screen.radial.editor.icon_picker.inventory": "Inventory",
-  "screen.radial.editor.icon_picker.inventory.info": "Selected slots dynamically sync with the selected inventory position.",
+  "screen.radial.editor.icon_picker.inventory.info": "This icon updates automatically to match the item in the selected inventory slot.",
   "screen.radial.editor.icon_picker.effects": "Effects",
   "screen.radial.editor.icon_picker.glyphs": "Glyphs",
   "screen.radial.editor.icon_picker.phosphor": "Icons",
+  "screen.radial.editor.icon_picker.empty_row": "Empty row",
+  "screen.radial.editor.hint.delay": "Seconds (e.g. 0.5)",
+  "screen.radial.editor.hint.chat": "Message or /command",
+  "screen.radial.editor.hint.keybind": "Keybind ID (e.g. key.jump)",
+  "screen.radial.editor.hint.shortcut": "Shortcut ID (e.g. radial:options)",
+  "screen.radial.editor.hint.malilib": "MaLiLib Hotkey ID",
+
+  "screen.radial.keybind_picker.title": "Select Keybind",
+  "screen.radial.shortcut_picker.title": "Select Shortcut",
+  "screen.radial.malilib_picker.title": "Select MaLiLib Action",
+  "screen.radial.icon_picker.title": "Icon Selector",
+
+  "screen.radial.macro.title": "Edit Macro",
+  "screen.radial.macro.column.type": "Action Mode",
+  "screen.radial.macro.column.value": "Action Value",
+  "screen.radial.macro.add": "Add Action",
+  "screen.radial.macro.remove": "Remove Action",
+  "screen.radial.macro.save.tooltip": "Keeps these changes and returns to the slot editor, where Save & Close finalizes them.",
+  "screen.radial.macro.limit": "A macro can have at most %s actions.",
+  "screen.radial.macro.count": "%s / %s",
+  "screen.radial.macro.seconds": "sec",
 
   "screen.radial.config.title": "Radial Configuration",
 
   "screen.radial.config.category.settings": "Settings",
   "screen.radial.config.category.settings.tooltip": "Radial by velolib",
 
-  "screen.radial.config.category.preview": "Live Preview",
-
   "screen.radial.config.show_preview": "Show Live Preview",
   "screen.radial.config.show_preview.tooltip": "Renders a live, interactive preview of your radial menu, including invisible detection zones.",
+
+  "screen.radial.config.optimize": "Optimize Radial Config",
+  "screen.radial.config.optimize.tooltip": "When you change a 'Submenu' or 'Macro' slot to another mode, its nested slots or macro actions are kept saved in the background.\n\nThis button permanently deletes all of that hidden, unused submenu and macro data to optimize memory and shrink your config file size.\n\nWARNING: This action is irreversible. This is the only way to completely reset and clear submenu and macro data for a slot.",
 
   "screen.radial.config.group.layout": "Dimensions & Layout",
 
@@ -110,6 +151,10 @@
 
   "screen.radial.config.reveal_animation": "Reveal Animation",
   "screen.radial.config.reveal_animation.tooltip": "Controls how the radial menu appears when opened.",
+  "screen.radial.config.reveal_animation.zoom": "Zoom",
+  "screen.radial.config.reveal_animation.staggered_clockwise": "Staggered — Clockwise",
+  "screen.radial.config.reveal_animation.staggered_counterclockwise": "Staggered — Counterclockwise",
+  "screen.radial.config.reveal_animation.staggered_both": "Staggered — Both Directions",
 
   "screen.radial.config.reveal_duration_ms": "Reveal Duration (ms)",
   "screen.radial.config.reveal_duration_ms.tooltip": "The total amount of time used to reveal the radial menu. Staggered animations overlap while still completing within this duration.",
@@ -122,20 +167,13 @@
 
   "screen.radial.config.activation_mode": "Activation Mode",
   "screen.radial.config.activation_mode.tooltip": "How actions are triggered.\n\nCursor + Click: Aim with the mouse, activate by clicking.\nCursor + Release: Aim with the mouse, activate by letting go of the hotkey.\nScroll + Click: Select with the scroll wheel, activate by clicking.\nScroll + Release: Select with the scroll wheel, activate by letting go of the hotkey.\n\n§e(Note: Submenus will always require a click to open)§r",
-
   "screen.radial.config.activation_mode.click": "Cursor + Click",
   "screen.radial.config.activation_mode.release": "Cursor + Release",
   "screen.radial.config.activation_mode.scroll_click": "Scroll + Click",
   "screen.radial.config.activation_mode.scroll_release": "Scroll + Release",
 
-  "screen.radial.config.reveal_animation.zoom": "Zoom",
-  "screen.radial.config.reveal_animation.staggered_clockwise": "Staggered — Clockwise",
-  "screen.radial.config.reveal_animation.staggered_counterclockwise": "Staggered — Counterclockwise",
-  "screen.radial.config.reveal_animation.staggered_both": "Staggered — Both Directions",
-
-  "screen.radial.config.optimize": "Optimize Radial Config",
-  "screen.radial.config.optimize.tooltip": "When you change a 'Submenu' slot to another mode, its nested slots are kept saved in the background.\n\nThis button permanently deletes all of that hidden, unused submenu data to optimize memory and shrink your config file size.\n\nWARNING: This action is irreversible. This is the only way to completely reset and clear submenu data for a slot.",
-
   "screen.radial.config.reset_cursor_on_submenu": "Reset Cursor on Submenu",
-  "screen.radial.config.reset_cursor_on_submenu.tooltip": "Whether to reset the position of the cursor to the center of the screen when opening a submenu."
+  "screen.radial.config.reset_cursor_on_submenu.tooltip": "Resets the cursor to the center of the screen when opening a submenu.",
+
+  "screen.radial.config.category.preview": "Live Preview"
 }

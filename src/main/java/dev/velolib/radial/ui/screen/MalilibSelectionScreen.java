@@ -36,7 +36,7 @@ public class MalilibSelectionScreen extends Screen {
 
     public MalilibSelectionScreen(Screen parent, Consumer<MalilibAction> onSelect) {
 
-        super(Component.literal("Select Malilib Action"));
+        super(Component.translatable("screen.radial.malilib_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;

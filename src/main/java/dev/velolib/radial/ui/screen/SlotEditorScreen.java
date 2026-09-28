@@ -39,6 +39,7 @@ public class SlotEditorScreen extends Screen {
     private final SlotMode oldMode;
     private final int oldChildCount;
     private final List<RadialSlot> oldChildren;
+    private final List<RadialSlot.Macro> oldMacros;
 
     private boolean isSaved = false;
 
@@ -56,6 +57,7 @@ public class SlotEditorScreen extends Screen {
         this.oldMode = slot.mode;
         this.oldChildCount = slot.childSlotCount;
         this.oldChildren = slot.children != null ? new java.util.ArrayList<>(slot.children) : null;
+        this.oldMacros = slot.macros != null ? new java.util.ArrayList<>(slot.macros) : null;
     }
 
     @Override
@@ -85,6 +87,7 @@ public class SlotEditorScreen extends Screen {
 
         List<SlotMode> availableModes = SlotModeRegistry.getRegisteredModes().values().stream()
                 .filter(SlotMode::isAvailable)
+                .filter(mode -> !mode.isMacroOnly())
                 .toList();
 
         modeDropdown =
@@ -142,17 +145,18 @@ public class SlotEditorScreen extends Screen {
         LinearLayout managementGroup = LinearLayout.horizontal().spacing(HORIZ_GAP);
         int mgmtBtnWidth = (contentWidth - HORIZ_GAP * 2) / 3;
 
-        Button copyBtn = Button.builder(Component.literal("Copy"), _ -> copyToClipboard())
+        Button copyBtn = Button.builder(Component.translatable("screen.radial.editor.copy"), _ -> copyToClipboard())
                 .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
                 .build();
         managementGroup.addChild(copyBtn);
 
-        Button pasteBtn = Button.builder(Component.literal("Paste"), _ -> pasteFromClipboard())
+        Button pasteBtn = Button.builder(
+                        Component.translatable("screen.radial.editor.paste"), _ -> pasteFromClipboard())
                 .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
                 .build();
         managementGroup.addChild(pasteBtn);
 
-        Button resetBtn = Button.builder(Component.literal("Reset"), _ -> resetSlot())
+        Button resetBtn = Button.builder(Component.translatable("screen.radial.editor.reset"), _ -> resetSlot())
                 .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
                 .build();
         managementGroup.addChild(resetBtn);
@@ -176,16 +180,18 @@ public class SlotEditorScreen extends Screen {
             SystemToast.add(
                     this.minecraft.gui.toastManager(),
                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                    Component.literal("Slot Copied"),
-                    Component.literal("Slot data copied to clipboard.")
-            );
+                    Component.translatable("screen.radial.editor.toast.copied"),
+                    Component.translatable("screen.radial.editor.toast.copied.desc"));
         } catch (Exception e) {
             SystemToast.add(
                     this.minecraft.gui.toastManager(),
                     SystemToast.SystemToastId.PACK_COPY_FAILURE,
-                    Component.literal("Copy Failed"),
-                    Component.literal(e.getMessage() != null ? e.getMessage() : "Unknown error")
-            );
+                    Component.translatable("screen.radial.editor.toast.copy_failed"),
+                    Component.literal(
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : Component.translatable("screen.radial.editor.error.unknown")
+                                            .getString()));
         }
     }
 
@@ -193,12 +199,14 @@ public class SlotEditorScreen extends Screen {
         try {
             String json = this.minecraft.keyboardHandler.getClipboard();
             if (json.trim().isEmpty()) {
-                throw new IllegalArgumentException("Clipboard is empty!");
+                throw new IllegalArgumentException(Component.translatable("screen.radial.editor.error.empty_clipboard")
+                        .getString());
             }
 
             RadialSlot pasted = RadialConfig.GSON.fromJson(json, RadialSlot.class);
             if (pasted == null) {
-                throw new IllegalArgumentException("Invalid slot JSON format!");
+                throw new IllegalArgumentException(Component.translatable("screen.radial.editor.error.invalid_json")
+                        .getString());
             }
 
             // Validation & Fallbacks
@@ -218,6 +226,11 @@ public class SlotEditorScreen extends Screen {
             } else {
                 this.slot.children = null;
             }
+            if (pasted.macros != null) {
+                this.slot.macros = new java.util.ArrayList<>(pasted.macros);
+            } else {
+                this.slot.macros = null;
+            }
             this.slot.clearCache();
 
             // Screen native rebuild function refreshes UI with new values
@@ -226,16 +239,18 @@ public class SlotEditorScreen extends Screen {
             SystemToast.add(
                     this.minecraft.gui.toastManager(),
                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                    Component.literal("Slot Pasted"),
-                    Component.literal("Successfully updated slot data.")
-            );
+                    Component.translatable("screen.radial.editor.toast.pasted"),
+                    Component.translatable("screen.radial.editor.toast.pasted.desc"));
         } catch (Exception e) {
             SystemToast.add(
                     this.minecraft.gui.toastManager(),
                     SystemToast.SystemToastId.PACK_COPY_FAILURE,
-                    Component.literal("Paste Failed"),
-                    Component.literal(e.getMessage() != null ? e.getMessage() : "Unknown error")
-            );
+                    Component.translatable("screen.radial.editor.toast.paste_failed"),
+                    Component.literal(
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : Component.translatable("screen.radial.editor.error.unknown")
+                                            .getString()));
         }
     }
 
@@ -246,6 +261,7 @@ public class SlotEditorScreen extends Screen {
         this.slot.itemId = "minecraft:air";
         this.slot.childSlotCount = 8;
         this.slot.children = null;
+        this.slot.macros = null;
         this.slot.clearCache();
 
         this.rebuildWidgets();
@@ -297,6 +313,12 @@ public class SlotEditorScreen extends Screen {
                 slot.children = null;
             }
 
+            if (oldMacros != null) {
+                slot.macros = new java.util.ArrayList<>(oldMacros);
+            } else {
+                slot.macros = null;
+            }
+
             slot.clearCache();
         }
 
@@ -312,14 +334,28 @@ public class SlotEditorScreen extends Screen {
                 floatingMenu.mouseClicked(click, doubled);
                 return true;
             } else //noinspection StatementWithEmptyBody
-                if (this.modeDropdown.isMouseOver(click.x(), click.y())) {
-                    // Let the click fall through so the button can close itself
-                } else {
-                    this.modeDropdown.closeMenu();
-                }
+            if (this.modeDropdown.isMouseOver(click.x(), click.y())) {
+                // Let the click fall through so the button can close itself
+            } else {
+                this.modeDropdown.closeMenu();
+            }
         }
 
         return super.mouseClicked(click, doubled);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // The floating menu overlaps other widgets, which would otherwise receive the scroll first
+        if (this.modeDropdown != null && this.modeDropdown.isMenuOpen()) {
+            DropdownMenuWidget<SlotMode> floatingMenu = this.modeDropdown.getActiveMenu();
+
+            if (floatingMenu.isMouseOver(mouseX, mouseY)) {
+                return floatingMenu.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+            }
+        }
+
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

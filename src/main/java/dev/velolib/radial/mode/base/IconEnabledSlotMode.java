@@ -2,7 +2,6 @@ package dev.velolib.radial.mode.base;
 
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotMode;
-import dev.velolib.radial.ui.screen.SlotEditorScreen;
 import dev.velolib.radial.ui.screen.iconpicker.IconPickerScreen;
 import dev.velolib.radial.util.EncoderUtils;
 import net.minecraft.client.Minecraft;
@@ -10,6 +9,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -19,7 +19,7 @@ public abstract class IconEnabledSlotMode implements SlotMode {
      * Helper to build the 3 icon widgets (Text Field, Browse Button, Hand Button)
      * using modern layout managers.
      */
-    protected void buildIconRow(SlotEditorScreen screen, RadialSlot slot, int width, LinearLayout container) {
+    protected void buildIconRow(Screen screen, RadialSlot slot, int width, LinearLayout container) {
         int HORIZ_GAP = 5;
         int ICON_BTN_WIDTH = 55;
         int ROW_HEIGHT = 20;

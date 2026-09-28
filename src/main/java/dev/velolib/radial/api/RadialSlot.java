@@ -23,6 +23,11 @@ public class RadialSlot {
     public List<RadialSlot> children = new ArrayList<>();
     public int childSlotCount = 8;
 
+    // Macros
+    public record Macro(SlotMode mode, String value) {}
+
+    public List<Macro> macros = new ArrayList<>();
+
     private transient ItemStack cachedStack;
 
     public RadialSlot(String name, SlotMode mode, String value, String itemId) {
@@ -57,7 +62,7 @@ public class RadialSlot {
             cachedStack.applyComponentsAndValidate(result.components());
         } catch (Exception e) {
             cachedStack = new ItemStack(Items.BARRIER);
-            cachedStack.set(DataComponents.CUSTOM_NAME, Component.literal("Invalid Item ID"));
+            cachedStack.set(DataComponents.CUSTOM_NAME, Component.translatable("radial.item.invalid_id"));
         }
 
         return cachedStack;

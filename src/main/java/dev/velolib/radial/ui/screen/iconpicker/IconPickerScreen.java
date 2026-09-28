@@ -21,7 +21,7 @@ public class IconPickerScreen extends Screen {
     private IconTab currentTab;
 
     public IconPickerScreen(Screen parent, Consumer<String> onSelect) {
-        super(Component.literal("Icon Selector"));
+        super(Component.translatable("screen.radial.icon_picker.title"));
         this.parent = parent;
 
         // Register Tabs

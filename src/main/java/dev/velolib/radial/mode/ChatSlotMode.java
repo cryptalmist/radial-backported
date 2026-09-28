@@ -3,11 +3,11 @@ package dev.velolib.radial.mode;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotActionContext;
 import dev.velolib.radial.mode.base.IconEnabledSlotMode;
-import dev.velolib.radial.ui.screen.SlotEditorScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.chat.Component;
 
@@ -19,7 +19,12 @@ public class ChatSlotMode extends IconEnabledSlotMode {
     }
 
     @Override
-    public void buildEditorWidgets(SlotEditorScreen screen, RadialSlot slot, int width, LinearLayout container) {
+    public Component getValueHint() {
+        return Component.translatable("screen.radial.editor.hint.chat");
+    }
+
+    @Override
+    public void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container) {
         // Group the Label and EditBox together closely
         LinearLayout valueGroup = LinearLayout.vertical().spacing(2);
 
@@ -31,6 +36,7 @@ public class ChatSlotMode extends IconEnabledSlotMode {
                 Minecraft.getInstance().font, 0, 0, width, 20, Component.translatable("screen.radial.editor.value"));
         valueField.setMaxLength(Integer.MAX_VALUE);
         valueField.setValue(slot.value != null ? slot.value : "");
+        valueField.setHint(this.getValueHint());
         valueField.setResponder(v -> slot.value = v);
         valueGroup.addChild(valueField);
 

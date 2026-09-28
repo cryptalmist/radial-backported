@@ -43,31 +43,32 @@ public class RadialConfig {
 
     public int version = CONFIG_VERSION;
 
+    // Layout (screen.radial.config.group.layout)
     public int slotCount = 8;
     public int slotRadius = 90;
     public int radialThickness = 90;
     public int innerDetectionBoundary = 15;
     public int outerDetectionBoundary = 25;
 
-    public RevealAnimation revealAnimation = RevealAnimation.ZOOM;
-    public int revealDurationMs = 180;
-    public int hoverAnimationDurationMs = 120;
-
-    public ActivationMode activationMode = ActivationMode.CLICK;
-    public boolean enableHoverAnimation = true;
-    public boolean showActivationZone = true;
-    public boolean resetCursorOnSubmenu = false;
-
-    public float sectorGap = 3.0f;
-    public boolean drawSectorBorders = true;
-    public float sectorBorderWidth = 1.5f;
-    public boolean drawOuterBorders = true;
-
+    // Appearance (screen.radial.config.group.appearance)
     public Color backgroundColor = new Color(0x661A150D, true);
     public Color activationColor = new Color(0x66FFE7B0, true);
     public Color borderColor = new Color(0x99FFE7B0, true);
     public Color highlightBorderColor = new Color(0x99FFE7B0, true);
+    public boolean showActivationZone = true;
+    public boolean drawOuterBorders = true;
+    public boolean drawSectorBorders = true;
+    public float sectorBorderWidth = 1.5f;
+    public float sectorGap = 3.0f;
     public boolean enableBackgroundBlur = false;
+
+    // Behavior (screen.radial.config.group.behavior)
+    public RevealAnimation revealAnimation = RevealAnimation.ZOOM;
+    public int revealDurationMs = 180;
+    public boolean enableHoverAnimation = true;
+    public int hoverAnimationDurationMs = 120;
+    public ActivationMode activationMode = ActivationMode.CLICK;
+    public boolean resetCursorOnSubmenu = false;
 
     public List<RadialSlot> slots = new ArrayList<>();
 
@@ -172,28 +173,14 @@ public class RadialConfig {
     }
 
     public void validate() {
+        // Layout
         this.slotCount = Math.clamp(this.slotCount, 2, 12);
         this.slotRadius = Math.clamp(this.slotRadius, 30, 300);
         this.radialThickness = Math.clamp(this.radialThickness, 20, 300);
         this.innerDetectionBoundary = Math.clamp(this.innerDetectionBoundary, 0, 200);
         this.outerDetectionBoundary = Math.clamp(this.outerDetectionBoundary, 0, 300);
-        this.revealDurationMs = Math.clamp(this.revealDurationMs, 0, 2000);
-        this.hoverAnimationDurationMs = Math.clamp(this.hoverAnimationDurationMs, 0, 2000);
-        this.sectorGap = Math.clamp(this.sectorGap, 0.0f, 20.0f);
-        this.sectorBorderWidth = Math.clamp(this.sectorBorderWidth, 0.0f, 10.0f);
 
-        if (this.slots == null) {
-            this.slots = new ArrayList<>();
-        }
-
-        if (this.revealAnimation == null) {
-            this.revealAnimation = RevealAnimation.ZOOM;
-        }
-
-        if (this.activationMode == null) {
-            this.activationMode = ActivationMode.CLICK;
-        }
-
+        // Appearance
         if (this.backgroundColor == null) {
             this.backgroundColor = new Color(0x661A150D, true);
         }
@@ -210,12 +197,32 @@ public class RadialConfig {
             this.highlightBorderColor = new Color(0x99FFE7B0, true);
         }
 
+        this.sectorBorderWidth = Math.clamp(this.sectorBorderWidth, 0.0f, 10.0f);
+        this.sectorGap = Math.clamp(this.sectorGap, 0.0f, 20.0f);
+
+        // Behavior
+        if (this.revealAnimation == null) {
+            this.revealAnimation = RevealAnimation.ZOOM;
+        }
+
+        this.revealDurationMs = Math.clamp(this.revealDurationMs, 0, 2000);
+        this.hoverAnimationDurationMs = Math.clamp(this.hoverAnimationDurationMs, 0, 2000);
+
+        if (this.activationMode == null) {
+            this.activationMode = ActivationMode.CLICK;
+        }
+
+        if (this.slots == null) {
+            this.slots = new ArrayList<>();
+        }
+
         for (RadialSlot slot : this.slots) {
             if (slot == null) continue;
             if (slot.name == null) slot.name = "";
             if (slot.mode == null) slot.mode = SlotModeRegistry.getDefaultMode();
             if (slot.value == null) slot.value = "";
             if (slot.itemId == null) slot.itemId = "minecraft:air";
+            if (slot.macros == null) slot.macros = new ArrayList<>();
         }
 
         ensureSlotCapacity();

@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
-
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -45,6 +44,7 @@ public class RadialScreen extends Screen {
     private static final DonutRenderer SECTOR_RENDERER = new DonutRenderer("main");
 
     private record MenuState(List<RadialSlot> slots, int slotCount) {}
+
     private final Stack<MenuState> history = new Stack<>();
 
     private final List<RadialSlot> rootSlots;
@@ -268,8 +268,7 @@ public class RadialScreen extends Screen {
             float slotX = (float) (cx + Math.cos(slotAngle) * finalRadius);
             float slotY = (float) (cy + Math.sin(slotAngle) * finalRadius);
 
-            float scale = revealEase
-                    * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * smoothedHover : 1.0F);
+            float scale = revealEase * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * smoothedHover : 1.0F);
 
             graphics.pose().pushMatrix();
             graphics.pose().translate(slotX, slotY);

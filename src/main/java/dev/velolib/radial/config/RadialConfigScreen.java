@@ -6,9 +6,9 @@ import dev.isxander.yacl3.api.utils.Dimension;
 import dev.isxander.yacl3.gui.AbstractWidget;
 import dev.isxander.yacl3.gui.YACLScreen;
 import dev.velolib.radial.api.RadialSlot;
+import dev.velolib.radial.mode.MacroSlotMode;
 import dev.velolib.radial.mode.SubmenuSlotMode;
 import dev.velolib.radial.render.DonutRenderer;
-
 import java.awt.*;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -54,7 +54,8 @@ public class RadialConfigScreen {
                                 .build())
                         .option(ButtonOption.createBuilder()
                                 .name(Component.translatable("screen.radial.config.optimize"))
-                                .description(OptionDescription.of(Component.translatable("screen.radial.config.optimize.tooltip")))
+                                .description(OptionDescription.of(
+                                        Component.translatable("screen.radial.config.optimize.tooltip")))
                                 .action((_, _) -> {
                                     optimizeSlotTree(config.slots);
                                     RadialConfig.save();
@@ -313,6 +314,10 @@ public class RadialConfigScreen {
         if (slots == null || slots.isEmpty()) return;
 
         for (RadialSlot slot : slots) {
+            if (!(slot.mode instanceof MacroSlotMode) && slot.macros != null) {
+                slot.macros.clear();
+            }
+
             if (!(slot.mode instanceof SubmenuSlotMode)) {
                 if (slot.children != null) {
                     slot.children.clear();

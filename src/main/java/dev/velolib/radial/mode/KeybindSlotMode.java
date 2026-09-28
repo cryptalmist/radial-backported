@@ -7,7 +7,6 @@ import dev.velolib.radial.api.SlotActionContext;
 import dev.velolib.radial.mixin.KeyMappingAccessor;
 import dev.velolib.radial.mode.base.IconEnabledSlotMode;
 import dev.velolib.radial.ui.screen.KeybindPickerScreen;
-import dev.velolib.radial.ui.screen.SlotEditorScreen;
 import java.util.HashMap;
 import java.util.function.Consumer;
 import net.minecraft.client.KeyMapping;
@@ -17,6 +16,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
@@ -43,7 +43,22 @@ public class KeybindSlotMode extends IconEnabledSlotMode {
     }
 
     @Override
-    public void buildEditorWidgets(SlotEditorScreen screen, RadialSlot slot, int width, LinearLayout container) {
+    public Component getValueHint() {
+        return Component.translatable("screen.radial.editor.hint.keybind");
+    }
+
+    @Override
+    public boolean hasValuePicker() {
+        return true;
+    }
+
+    @Override
+    public void openValuePicker(Screen parent, Consumer<String> onSelect) {
+        Minecraft.getInstance().gui.setScreen(new KeybindPickerScreen(parent, onSelect));
+    }
+
+    @Override
+    public void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container) {
         int HORIZ_GAP = 5;
         int BROWSE_BTN_WIDTH = 55;
         int ROW_HEIGHT = 20;
@@ -68,15 +83,16 @@ public class KeybindSlotMode extends IconEnabledSlotMode {
                 Component.translatable("screen.radial.editor.value"));
         valueField.setMaxLength(Integer.MAX_VALUE);
         valueField.setValue(slot.value != null ? slot.value : "");
+        valueField.setHint(this.getValueHint());
         valueField.setResponder(v -> slot.value = v);
         inputRow.addChild(valueField);
 
         Button valueBrowseButton = Button.builder(
                         Component.translatable("screen.radial.editor.select"),
-                        _ -> Minecraft.getInstance().gui.setScreen(new KeybindPickerScreen(screen, id -> {
+                        _ -> openValuePicker(screen, id -> {
                             valueField.setValue(id);
                             slot.value = id;
-                        })))
+                        }))
                 .bounds(0, 0, BROWSE_BTN_WIDTH, ROW_HEIGHT)
                 .build();
         inputRow.addChild(valueBrowseButton);

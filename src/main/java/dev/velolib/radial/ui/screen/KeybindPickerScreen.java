@@ -25,7 +25,7 @@ public class KeybindPickerScreen extends Screen {
     private KeybindList keybindList;
 
     public KeybindPickerScreen(Screen parent, Consumer<String> onSelect) {
-        super(Component.literal("Select Keybind"));
+        super(Component.translatable("screen.radial.keybind_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
