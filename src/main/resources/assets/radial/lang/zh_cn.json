@@ -1,9 +1,11 @@
 {
   "modmenu.nameTranslation.radial": "Radial",
   "modmenu.descriptionTranslation.radial": "一个简单且开箱即用的 Minecraft 径向菜单模组。",
+
   "key.category.radial.main": "Radial",
   "key.radial.open": "打开径向菜单",
   "key.radial.back": "返回（子菜单）",
+  "key.radial.stop_macros": "停止所有宏",
   "key.radial.slot.1": "激活槽位 1",
   "key.radial.slot.2": "激活槽位 2",
   "key.radial.slot.3": "激活槽位 3",
@@ -16,85 +18,171 @@
   "key.radial.slot.10": "激活槽位 10",
   "key.radial.slot.11": "激活槽位 11",
   "key.radial.slot.12": "激活槽位 12",
+
   "radial.ui.back": "返回",
+  "radial.macro.stopped": "宏已停止：%s",
+  "radial.item.invalid_id": "无效的物品 ID",
+
   "radial.mode.empty": "无操作",
+  "radial.mode.delay": "添加延迟",
   "radial.mode.chat": "发送聊天 / 命令",
   "radial.mode.keybind": "触发游戏按键",
   "radial.mode.shortcut": "打开界面快捷方式",
   "radial.mode.malilib": "触发 MaLiLib 热键",
   "radial.mode.submenu": "打开子菜单",
+  "radial.mode.macro": "运行宏",
+
   "screen.radial.editor.title": "编辑径向槽位",
   "screen.radial.editor.name": "槽位名称",
   "screen.radial.editor.mode": "动作模式",
   "screen.radial.editor.value": "动作值",
   "screen.radial.editor.icon": "图标标识符",
+  "screen.radial.editor.icon.invalid": "未知的图标或物品 ID",
+  "screen.radial.editor.icon_color": "图标颜色",
+  "screen.radial.editor.icon_color.hint": "#FFFFFF",
+  "screen.radial.editor.icon_color.disabled": "只有图标和字形可以着色",
   "screen.radial.editor.submenu": "子菜单大小",
   "screen.radial.editor.submenu.placeholder": "子菜单大小：%s",
+  "screen.radial.editor.macro": "宏动作",
+  "screen.radial.editor.macro.edit": "编辑动作 (%s/%s)",
   "screen.radial.editor.save": "保存并关闭",
   "screen.radial.editor.cancel": "取消",
   "screen.radial.editor.browse": "图标",
   "screen.radial.editor.hand": "手持物品",
   "screen.radial.editor.select": "选择",
   "screen.radial.editor.search": "搜索...",
+  "screen.radial.editor.copy": "复制",
+  "screen.radial.editor.paste": "粘贴",
+  "screen.radial.editor.reset": "重置",
+  "screen.radial.editor.toast.copied": "槽位已复制",
+  "screen.radial.editor.toast.copied.desc": "槽位数据已复制到剪贴板。",
+  "screen.radial.editor.toast.copy_failed": "复制失败",
+  "screen.radial.editor.toast.pasted": "槽位已粘贴",
+  "screen.radial.editor.toast.pasted.desc": "已成功更新槽位数据。",
+  "screen.radial.editor.toast.paste_failed": "粘贴失败",
+  "screen.radial.editor.error.empty_clipboard": "剪贴板为空！",
+  "screen.radial.editor.error.invalid_json": "无效的槽位 JSON 格式！",
+  "screen.radial.editor.error.unknown": "未知错误",
   "screen.radial.editor.icon_picker.items": "物品",
   "screen.radial.editor.icon_picker.inventory": "物品栏",
   "screen.radial.editor.icon_picker.inventory.info": "选中的槽位会与所选物品栏位置动态同步。",
   "screen.radial.editor.icon_picker.effects": "效果",
   "screen.radial.editor.icon_picker.glyphs": "字形",
   "screen.radial.editor.icon_picker.phosphor": "图标",
+  "screen.radial.editor.icon_picker.empty_row": "空行",
+  "screen.radial.editor.icon_picker.recent": "最近使用",
+  "screen.radial.editor.icon_picker.recent.empty": "你选择或收藏的图标会显示在这里",
+  "screen.radial.editor.icon_picker.no_results": "未找到匹配的图标",
+  "screen.radial.editor.icon_picker.favorite_hint": "右键点击图标以收藏",
+  "screen.radial.editor.hint.delay": "秒数（例如 0.5）",
+  "screen.radial.editor.hint.chat": "消息或 /命令",
+  "screen.radial.editor.hint.keybind": "按键 ID（例如 key.jump）",
+  "screen.radial.editor.hint.shortcut": "快捷方式 ID（例如 radial:options）",
+  "screen.radial.editor.hint.malilib": "MaLiLib 热键 ID",
+
+  "screen.radial.keybind_picker.title": "选择按键",
+  "screen.radial.shortcut_picker.title": "选择快捷方式",
+  "screen.radial.malilib_picker.title": "选择 MaLiLib 动作",
+  "screen.radial.malilib_picker.empty": "未找到 MaLiLib 模组或没有可用的热键。",
+  "screen.radial.icon_picker.title": "图标选择器",
+
+  "screen.radial.macro.title": "编辑宏",
+  "screen.radial.macro.column.type": "动作模式",
+  "screen.radial.macro.column.value": "动作值",
+  "screen.radial.macro.add": "添加动作",
+  "screen.radial.macro.remove": "移除动作",
+  "screen.radial.macro.save.tooltip": "保留这些更改并返回槽位编辑器，在那里点击“保存并关闭”以最终确定更改。",
+  "screen.radial.macro.limit": "一个宏最多可以有 %s 个动作。",
+  "screen.radial.macro.count": "%s / %s",
+  "screen.radial.macro.seconds": "秒",
+
   "screen.radial.config.title": "Radial 配置",
+
   "screen.radial.config.category.settings": "设置",
   "screen.radial.config.category.settings.tooltip": "Radial 由 velolib 开发",
-  "screen.radial.config.category.preview": "实时预览",
+
   "screen.radial.config.show_preview": "显示实时预览",
   "screen.radial.config.show_preview.tooltip": "渲染径向菜单的实时交互式预览，包括不可见的检测区域。",
+
+  "screen.radial.config.optimize": "优化 Radial 配置",
+  "screen.radial.config.optimize.tooltip": "当你将“子菜单”或“宏”槽位更改为其他模式时，其嵌套槽位或宏动作会在后台保留保存。\n\n此按钮将永久删除所有隐藏的、未使用的子菜单和宏数据，以优化内存并缩小配置文件大小。\n\n警告：此操作不可逆。这是完全重置和清除槽位子菜单及宏数据的唯一方法。",
+
   "screen.radial.config.group.layout": "尺寸与布局",
+
   "screen.radial.config.slot_count": "槽位数量",
   "screen.radial.config.slot_count.tooltip": "径向菜单中可选扇区的数量。",
+
   "screen.radial.config.slot_radius": "槽位半径",
   "screen.radial.config.slot_radius.tooltip": "从屏幕中心到每个物品槽位中心的距离，也是可见径向菜单的中心线。",
+
   "screen.radial.config.radial_thickness": "径向厚度",
   "screen.radial.config.radial_thickness.tooltip": "控制可见径向菜单的厚度。环形以槽位半径为中心向内外等距扩展。",
+
   "screen.radial.config.inner_detection_boundary": "内部检测边界",
   "screen.radial.config.inner_detection_boundary.tooltip": "在可见径向菜单内部扩展不可见的选择区域。这不会移动槽位或扇区。",
+
   "screen.radial.config.outer_detection_boundary": "外部检测边界",
   "screen.radial.config.outer_detection_boundary.tooltip": "在可见径向菜单外部扩展不可见的选择区域。这不会移动槽位或扇区。",
+
   "screen.radial.config.group.appearance": "外观与颜色",
+
   "screen.radial.config.background_color": "背景颜色",
   "screen.radial.config.background_color.tooltip": "未选中菜单扇区的默认颜色。",
+
   "screen.radial.config.activation_color": "高亮颜色",
   "screen.radial.config.activation_color.tooltip": "扇区在悬停或选中时使用的颜色。",
+
   "screen.radial.config.border_color": "边框强调色",
   "screen.radial.config.border_color.tooltip": "未选中扇区使用的边框颜色。",
+
   "screen.radial.config.highlight_border_color": "高亮边框颜色",
   "screen.radial.config.highlight_border_color.tooltip": "高亮扇区使用的边框颜色。",
+
   "screen.radial.config.show_activation_zone": "绘制菜单背景",
   "screen.radial.config.show_activation_zone.tooltip": "在物品槽位后方渲染可见的背景环形和扇区颜色。",
+
   "screen.radial.config.draw_outer_borders": "绘制内外边框",
   "screen.radial.config.draw_outer_borders.tooltip": "沿可见径向菜单的内边缘和外边缘绘制弧形强调边框。",
+
   "screen.radial.config.draw_sector_borders": "绘制扇区分割线",
   "screen.radial.config.draw_sector_borders.tooltip": "在分隔每个菜单扇区的直边上绘制强调边框。",
+
   "screen.radial.config.sector_border_width": "扇区边框宽度",
   "screen.radial.config.sector_border_width.tooltip": "控制分隔扇区的直边边框的粗细。",
+
   "screen.radial.config.sector_gap": "扇区间隔",
   "screen.radial.config.sector_gap.tooltip": "每个扇区之间的视觉间距。这纯粹是装饰性的，不影响可点击的判定区域。",
+
+  "screen.radial.config.enable_background_blur": "启用背景模糊",
+  "screen.radial.config.enable_background_blur.tooltip": "在打开径向菜单时平滑地模糊背景，与展开动画相匹配。",
+
   "screen.radial.config.group.behavior": "交互与行为",
+
   "screen.radial.config.reveal_animation": "展开动画",
   "screen.radial.config.reveal_animation.tooltip": "控制径向菜单打开时的显示方式。",
+  "screen.radial.config.reveal_animation.zoom": "缩放",
+  "screen.radial.config.reveal_animation.staggered_clockwise": "交错 — 顺时针",
+  "screen.radial.config.reveal_animation.staggered_counterclockwise": "交错 — 逆时针",
+  "screen.radial.config.reveal_animation.staggered_both": "交错 — 双向",
+
   "screen.radial.config.reveal_duration_ms": "展开时长（毫秒）",
   "screen.radial.config.reveal_duration_ms.tooltip": "径向菜单展开的总时间。交错动画会重叠，但仍在此时长内完成。",
+
   "screen.radial.config.enable_hover_animation": "悬停动画",
   "screen.radial.config.enable_hover_animation.tooltip": "当光标进入槽位时，将悬停的槽位向外移动并放大。",
+
   "screen.radial.config.hover_animation_duration_ms": "悬停动画时长（毫秒）",
   "screen.radial.config.hover_animation_duration_ms.tooltip": "控制槽位悬停时移动和缩放的速度。设为 0 可瞬间移动。",
+
   "screen.radial.config.activation_mode": "激活模式",
   "screen.radial.config.activation_mode.tooltip": "动作触发方式。\n\n光标 + 点击：用鼠标瞄准，点击激活。\n光标 + 释放：用鼠标瞄准，松开热键激活。\n滚轮 + 点击：用滚轮选择，点击激活。\n滚轮 + 释放：用滚轮选择，松开热键激活。\n\n§e（注意：子菜单始终需要点击才能打开）§r",
   "screen.radial.config.activation_mode.click": "光标 + 点击",
   "screen.radial.config.activation_mode.release": "光标 + 释放",
   "screen.radial.config.activation_mode.scroll_click": "滚轮 + 点击",
   "screen.radial.config.activation_mode.scroll_release": "滚轮 + 释放",
-  "screen.radial.config.reveal_animation.zoom": "缩放",
-  "screen.radial.config.reveal_animation.staggered_clockwise": "交错 — 顺时针",
-  "screen.radial.config.reveal_animation.staggered_counterclockwise": "交错 — 逆时针",
-  "screen.radial.config.reveal_animation.staggered_both": "交错 — 双向"
+
+  "screen.radial.config.reset_cursor_on_submenu": "打开子菜单时重置光标",
+  "screen.radial.config.reset_cursor_on_submenu.tooltip": "打开子菜单时将光标重置到屏幕中心。",
+
+  "screen.radial.config.category.preview": "实时预览"
 }

@@ -27,11 +27,13 @@ public class SlotModeRegistry {
         initialized = true;
 
         register(EMPTY_ID, new EmptySlotMode());
+        register(Identifier.fromNamespaceAndPath("radial", "delay"), new DelaySlotMode());
         register(Identifier.fromNamespaceAndPath("radial", "chat"), new ChatSlotMode());
         register(Identifier.fromNamespaceAndPath("radial", "keybind"), new KeybindSlotMode());
         register(Identifier.fromNamespaceAndPath("radial", "shortcut"), new ShortcutSlotMode());
         register(Identifier.fromNamespaceAndPath("radial", "malilib"), new MalilibSlotMode());
         register(Identifier.fromNamespaceAndPath("radial", "submenu"), new SubmenuSlotMode());
+        register(Identifier.fromNamespaceAndPath("radial", "macro"), new MacroSlotMode());
 
         FabricLoader.getInstance()
                 .getEntrypointContainers("radial", RadialApiEntrypoint.class)

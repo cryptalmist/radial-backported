@@ -1,10 +1,10 @@
 package dev.velolib.radial.mixin;
 
+import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.ui.screen.RadialScreen;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,19 +15,11 @@ public class KeyMappingMixin {
 
     @Inject(method = "isDown", at = @At("HEAD"), cancellable = true)
     private void allowRadialMovement(CallbackInfoReturnable<Boolean> cir) {
-        Minecraft client = Minecraft.getInstance();
-
-        if (client.gui.screen() instanceof RadialScreen) {
-
+        if (Minecraft.getInstance().gui.screen() instanceof RadialScreen) {
             KeyMapping self = (KeyMapping) (Object) this;
 
             if (self.getCategory().equals(KeyMapping.Category.MOVEMENT)) {
-
-                int keyCode = KeyMappingHelper.getBoundKeyOf(self).getValue();
-                long handle = client.getWindow().handle();
-                boolean isPhysicallyPressed = GLFW.glfwGetKey(handle, keyCode) == GLFW.GLFW_PRESS;
-
-                cir.setReturnValue(isPhysicallyPressed);
+                cir.setReturnValue(RadialClient.isPhysicallyDown(KeyMappingHelper.getBoundKeyOf(self)));
             }
         }
     }

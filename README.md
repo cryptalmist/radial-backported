@@ -10,7 +10,7 @@
 <img alt="fabric" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg">
 <img alt="forge" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/unsupported/forge_vector.svg">
 
-### A simple and opinionated Minecraft radial menu mod that works flawlessly out of the box.
+***A simple and opinionated Minecraft radial menu mod that works flawlessly out of the box.***
 
 </div>
 

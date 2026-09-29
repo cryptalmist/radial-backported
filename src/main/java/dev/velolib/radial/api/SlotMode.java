@@ -1,7 +1,8 @@
 package dev.velolib.radial.api;
 
-import dev.velolib.radial.ui.screen.SlotEditorScreen;
+import java.util.function.Consumer;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public interface SlotMode {
@@ -21,6 +22,46 @@ public interface SlotMode {
     default boolean shouldRenderIcon() {
         return true;
     }
+
+    /**
+     * Determines if this mode can be picked as an action type inside a macro.
+     * Modes that depend on the radial menu being open (like Submenus) should return false.
+     */
+    default boolean isMacroAction() {
+        return true;
+    }
+
+    /**
+     * Determines if this mode is exclusive to macros (like Delay).
+     * Macro-only modes are hidden from the slot mode selection menu.
+     */
+    default boolean isMacroOnly() {
+        return false;
+    }
+
+    /**
+     * The placeholder shown in this mode's Action Value field, both in the slot editor
+     * and in a macro action row using this mode.
+     */
+    default Component getValueHint() {
+        return Component.translatable("screen.radial.editor.value");
+    }
+
+    /**
+     * Determines if this mode offers a picker screen for choosing its value.
+     */
+    default boolean hasValuePicker() {
+        return false;
+    }
+
+    /**
+     * Opens this mode's value picker. The picker must return to {@code parent} when closed.
+     * Only called when {@link #hasValuePicker()} returns true.
+     *
+     * @param parent   The screen to return to.
+     * @param onSelect Receives the chosen value.
+     */
+    default void openValuePicker(Screen parent, Consumer<String> onSelect) {}
 
     /**
      * Should this mode execute its action if the radial menu hotkey is released while hovering?
@@ -65,5 +106,5 @@ public interface SlotMode {
      * @param width     The maximum available width for the layout block.
      * @param container The vertical layout container where the generated widgets should be added.
      */
-    void buildEditorWidgets(SlotEditorScreen screen, RadialSlot slot, int width, LinearLayout container);
+    void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container);
 }
