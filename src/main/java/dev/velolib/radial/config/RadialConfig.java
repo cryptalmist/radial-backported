@@ -4,21 +4,25 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import dev.isxander.yacl3.api.NameableEnum;
 import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotMode;
 import dev.velolib.radial.api.SlotModeRegistry;
 import dev.velolib.radial.config.adapters.ColorTypeAdapter;
 import dev.velolib.radial.config.adapters.SlotModeTypeAdapter;
+import dev.velolib.radial.ui.screen.RadialScreen;
 import java.awt.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
 
@@ -32,7 +36,6 @@ public class RadialConfig {
     private static final File TEMP_FILE =
             FabricLoader.getInstance().getConfigDir().resolve("radial.json.tmp").toFile();
 
-    // Changed from private to public for clipboard usage
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(Color.class, new ColorTypeAdapter())
@@ -154,11 +157,16 @@ public class RadialConfig {
             try (FileWriter writer = new FileWriter(TEMP_FILE)) {
                 GSON.toJson(INSTANCE, writer);
             }
-            Files.move(
-                    TEMP_FILE.toPath(),
-                    CONFIG_FILE.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE);
+            try {
+                Files.move(
+                        TEMP_FILE.toPath(),
+                        CONFIG_FILE.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                // Some file systems can't replace atomically; a plain replace still beats losing the save
+                Files.move(TEMP_FILE.toPath(), CONFIG_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (Exception e) {
             RadialClient.LOGGER.error("Critical error during config save!", e);
         }
@@ -168,8 +176,13 @@ public class RadialConfig {
         if (!CONFIG_FILE.exists()) {
             return;
         }
-        File backup = new File(CONFIG_FILE.getAbsolutePath() + ".bak");
-        CONFIG_FILE.renameTo(backup);
+        Path backup = CONFIG_FILE.toPath().resolveSibling(CONFIG_FILE.getName() + ".bak");
+        try {
+            Files.move(CONFIG_FILE.toPath(), backup, StandardCopyOption.REPLACE_EXISTING);
+            RadialClient.LOGGER.warn("Unreadable config was backed up to {}", backup);
+        } catch (IOException e) {
+            RadialClient.LOGGER.error("Failed to back up the unreadable config.", e);
+        }
     }
 
     public void validate() {
@@ -197,7 +210,7 @@ public class RadialConfig {
             this.highlightBorderColor = new Color(0x99FFE7B0, true);
         }
 
-        this.sectorBorderWidth = Math.clamp(this.sectorBorderWidth, 0.0f, 10.0f);
+        this.sectorBorderWidth = Math.clamp(this.sectorBorderWidth, 0.0f, 5.0f);
         this.sectorGap = Math.clamp(this.sectorGap, 0.0f, 20.0f);
 
         // Behavior
@@ -216,13 +229,9 @@ public class RadialConfig {
             this.slots = new ArrayList<>();
         }
 
+        this.slots.removeIf(Objects::isNull);
         for (RadialSlot slot : this.slots) {
-            if (slot == null) continue;
-            if (slot.name == null) slot.name = "";
-            if (slot.mode == null) slot.mode = SlotModeRegistry.getDefaultMode();
-            if (slot.value == null) slot.value = "";
-            if (slot.itemId == null) slot.itemId = "minecraft:air";
-            if (slot.macros == null) slot.macros = new ArrayList<>();
+            slot.sanitize();
         }
 
         ensureSlotCapacity();
@@ -235,7 +244,26 @@ public class RadialConfig {
         }
     }
 
-    public enum RevealAnimation implements NameableEnum {
+    // --- Geometry ---
+
+    public float getVisibleInnerRadius() {
+        return Math.max(0.0F, slotRadius - radialThickness / 2.0F);
+    }
+
+    public float getVisibleOuterRadius() {
+        return slotRadius + radialThickness / 2.0F;
+    }
+
+    public float getDetectionInnerRadius() {
+        return Math.max(0.0F, getVisibleInnerRadius() - innerDetectionBoundary);
+    }
+
+    public float getDetectionOuterRadius() {
+        float radius = getVisibleOuterRadius() + outerDetectionBoundary;
+        return enableHoverAnimation ? radius + RadialScreen.SLOT_PUSH : radius;
+    }
+
+    public enum RevealAnimation {
         ZOOM("screen.radial.config.reveal_animation.zoom"),
         STAGGERED_CLOCKWISE("screen.radial.config.reveal_animation.staggered_clockwise"),
         STAGGERED_COUNTERCLOCKWISE("screen.radial.config.reveal_animation.staggered_counterclockwise"),
@@ -247,13 +275,12 @@ public class RadialConfig {
             this.displayName = Component.translatable(translationKey);
         }
 
-        @Override
         public Component getDisplayName() {
             return displayName;
         }
     }
 
-    public enum ActivationMode implements NameableEnum {
+    public enum ActivationMode {
         CLICK("screen.radial.config.activation_mode.click"),
         RELEASE("screen.radial.config.activation_mode.release"),
         SCROLL_CLICK("screen.radial.config.activation_mode.scroll_click"),
@@ -265,7 +292,6 @@ public class RadialConfig {
             this.displayName = Component.translatable(translationKey);
         }
 
-        @Override
         public Component getDisplayName() {
             return displayName;
         }

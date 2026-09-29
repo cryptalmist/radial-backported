@@ -60,6 +60,7 @@ public class IconPickerScreen extends Screen {
                 listWidth,
                 20,
                 Component.translatable("screen.radial.editor.search"));
+        searchField.setHint(Component.translatable("screen.radial.editor.search"));
         searchField.setResponder(query -> {
             if (currentTab != null) currentTab.updateSearch(query);
         });

@@ -75,6 +75,7 @@
   "screen.radial.keybind_picker.title": "Select Keybind",
   "screen.radial.shortcut_picker.title": "Select Shortcut",
   "screen.radial.malilib_picker.title": "Select MaLiLib Action",
+  "screen.radial.malilib_picker.empty": "No MaLiLib mods found or no hotkeys available.",
   "screen.radial.icon_picker.title": "Icon Selector",
 
   "screen.radial.macro.title": "Edit Macro",
@@ -93,7 +94,7 @@
   "screen.radial.config.category.settings.tooltip": "Radial by velolib",
 
   "screen.radial.config.show_preview": "Show Live Preview",
-  "screen.radial.config.show_preview.tooltip": "Renders a live, interactive preview of your radial menu, including invisible detection zones.",
+  "screen.radial.config.show_preview.tooltip": "Renders a live preview of your radial menu that updates as you change settings, including the invisible detection zones.",
 
   "screen.radial.config.optimize": "Optimize Radial Config",
   "screen.radial.config.optimize.tooltip": "When you change a 'Submenu' or 'Macro' slot to another mode, its nested slots or macro actions are kept saved in the background.\n\nThis button permanently deletes all of that hidden, unused submenu and macro data to optimize memory and shrink your config file size.\n\nWARNING: This action is irreversible. This is the only way to completely reset and clear submenu and macro data for a slot.",

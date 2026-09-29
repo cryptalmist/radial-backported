@@ -142,10 +142,20 @@ public class RadialClient implements ClientModInitializer {
         }
     }
 
-    public static void devLogger(String message) {
-        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            LOGGER.info("DEV - [ {} ]", message);
-        }
+    /**
+     * Whether the physical key or mouse button is currently held, regardless of which screen is open.
+     * Unbound keys always count as released.
+     */
+    public static boolean isPhysicallyDown(InputConstants.Key key) {
+        int code = key.getValue();
+        if (code == InputConstants.UNKNOWN.getValue()) return false;
+
+        long handle = Minecraft.getInstance().getWindow().handle();
+        return switch (key.getType()) {
+            case MOUSE -> GLFW.glfwGetMouseButton(handle, code) == GLFW.GLFW_PRESS;
+            case KEYSYM -> GLFW.glfwGetKey(handle, code) == GLFW.GLFW_PRESS;
+            default -> false;
+        };
     }
 
     @Override

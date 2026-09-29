@@ -1,24 +1,21 @@
 package dev.velolib.radial.ui.screen;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotActionContext;
 import dev.velolib.radial.config.RadialConfig;
 import dev.velolib.radial.render.DonutRenderer;
 import dev.velolib.radial.render.SlotRenderHelper;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
-import java.util.Objects;
-import java.util.Stack;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -27,15 +24,12 @@ import org.lwjgl.glfw.GLFW;
 
 public class RadialScreen extends Screen {
 
-    private static final Identifier SLOT_TEXTURE =
-            Identifier.fromNamespaceAndPath("minecraft", "gamemode_switcher/slot");
-    private static final Identifier SELECTION_TEXTURE =
-            Identifier.fromNamespaceAndPath("minecraft", "gamemode_switcher/selection");
+    // How far a hovered slot moves outward, and how much it grows
+    public static final float SLOT_PUSH = 7.5F;
+    public static final float SLOT_HOVER_SCALE = 0.1F;
 
     private static final int SLOT_SIZE = 26;
     private static final int ITEM_SIZE = 16;
-    private static final float SLOT_PUSH = 7.5F;
-    private static final float SLOT_HOVER_SCALE = 0.1F;
     private static final float STAGGER_STEP_FRACTION = 0.4F;
 
     // The maximum possible renderable slots (12 config slots + 1 submenu back button)
@@ -43,9 +37,12 @@ public class RadialScreen extends Screen {
 
     private static final DonutRenderer SECTOR_RENDERER = new DonutRenderer("main");
 
+    private static final ItemStack BACK_ICON = new ItemStack(Items.ARROW);
+    private static final ItemStack MISSING_ICON = new ItemStack(Items.BARRIER);
+
     private record MenuState(List<RadialSlot> slots, int slotCount) {}
 
-    private final Stack<MenuState> history = new Stack<>();
+    private final Deque<MenuState> history = new ArrayDeque<>();
 
     private final List<RadialSlot> rootSlots;
     private final float[] pushAnim;
@@ -68,9 +65,7 @@ public class RadialScreen extends Screen {
 
     public static void prepareRenderer() {
         RadialConfig config = RadialConfig.INSTANCE;
-        float visibleInner = Math.max(0.0F, config.slotRadius - config.radialThickness / 2.0F);
-        float visibleOuter = config.slotRadius + config.radialThickness / 2.0F;
-        SECTOR_RENDERER.prepare(config.slotCount, visibleInner, visibleOuter, 2.0F);
+        SECTOR_RENDERER.prepare(config.slotCount, config.getVisibleInnerRadius(), config.getVisibleOuterRadius(), 2.0F);
     }
 
     @Override
@@ -129,26 +124,7 @@ public class RadialScreen extends Screen {
 
     private void prepareSectorRenderer() {
         RadialConfig config = RadialConfig.INSTANCE;
-        SECTOR_RENDERER.prepare(getRenderCount(), getVisibleInnerRadius(config), getVisibleOuterRadius(config), 2.0F);
-    }
-
-    private float getVisibleInnerRadius(RadialConfig config) {
-        return Math.max(0.0F, config.slotRadius - config.radialThickness / 2.0F);
-    }
-
-    private float getVisibleOuterRadius(RadialConfig config) {
-        return config.slotRadius + config.radialThickness / 2.0F;
-    }
-
-    private float getDetectionInnerRadius(RadialConfig config) {
-        return Math.max(0.0F, getVisibleInnerRadius(config) - config.innerDetectionBoundary);
-    }
-
-    private float getDetectionOuterRadius(RadialConfig config) {
-        float radius = getVisibleOuterRadius(config);
-        return config.enableHoverAnimation
-                ? radius + SLOT_PUSH + config.outerDetectionBoundary
-                : radius + config.outerDetectionBoundary;
+        SECTOR_RENDERER.prepare(getRenderCount(), config.getVisibleInnerRadius(), config.getVisibleOuterRadius(), 2.0F);
     }
 
     // --- Render Loop ---
@@ -161,18 +137,7 @@ public class RadialScreen extends Screen {
                 mode == RadialConfig.ActivationMode.SCROLL_CLICK || mode == RadialConfig.ActivationMode.SCROLL_RELEASE;
 
         // 1. Check Key Release
-        InputConstants.Key boundKey = KeyMappingHelper.getBoundKeyOf(RadialClient.OPEN_RADIAL);
-        int keyCode = boundKey.getValue();
-        long handle = Minecraft.getInstance().getWindow().handle();
-
-        boolean isReleased = true;
-        if (boundKey.getType() == InputConstants.Type.MOUSE) {
-            isReleased = GLFW.glfwGetMouseButton(handle, keyCode) == GLFW.GLFW_RELEASE;
-        } else if (boundKey.getType() == InputConstants.Type.KEYSYM && keyCode != InputConstants.UNKNOWN.getValue()) {
-            isReleased = GLFW.glfwGetKey(handle, keyCode) == GLFW.GLFW_RELEASE;
-        }
-
-        if (isReleased) {
+        if (!RadialClient.isPhysicallyDown(KeyMappingHelper.getBoundKeyOf(RadialClient.OPEN_RADIAL))) {
             if (mode == RadialConfig.ActivationMode.RELEASE || mode == RadialConfig.ActivationMode.SCROLL_RELEASE) {
                 if (hoveredSlot != -1) {
                     if (isSubmenu() && hoveredSlot == 0) {
@@ -209,7 +174,7 @@ public class RadialScreen extends Screen {
             double dy = mouseY - cy;
             double dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist >= getDetectionInnerRadius(config) && dist <= getDetectionOuterRadius(config)) {
+            if (dist >= config.getDetectionInnerRadius() && dist <= config.getDetectionOuterRadius()) {
                 double angle = Math.atan2(dy, dx);
                 if (angle < 0.0) angle += Math.PI * 2.0;
 
@@ -278,11 +243,17 @@ public class RadialScreen extends Screen {
             int drawOffset = -SLOT_SIZE / 2;
 
             graphics.blitSprite(
-                    RenderPipelines.GUI_TEXTURED, SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE, color);
+                    RenderPipelines.GUI_TEXTURED,
+                    SlotRenderHelper.SLOT_TEXTURE,
+                    drawOffset,
+                    drawOffset,
+                    SLOT_SIZE,
+                    SLOT_SIZE,
+                    color);
             if (i == hoveredSlot) {
                 graphics.blitSprite(
                         RenderPipelines.GUI_TEXTURED,
-                        SELECTION_TEXTURE,
+                        SlotRenderHelper.SELECTION_TEXTURE,
                         drawOffset,
                         drawOffset,
                         SLOT_SIZE,
@@ -291,13 +262,13 @@ public class RadialScreen extends Screen {
             }
 
             if (isSubmenu() && i == 0) {
-                graphics.item(new ItemStack(Items.ARROW), -ITEM_SIZE / 2, -ITEM_SIZE / 2);
+                graphics.item(BACK_ICON, -ITEM_SIZE / 2, -ITEM_SIZE / 2);
             } else {
                 RadialSlot slot = getTargetSlot(i);
                 if (slot != null) {
                     SlotRenderHelper.renderSlotIcon(graphics, slot, drawOffset, drawOffset);
                 } else {
-                    graphics.item(new ItemStack(Items.BARRIER), -ITEM_SIZE / 2, -ITEM_SIZE / 2);
+                    graphics.item(MISSING_ICON, -ITEM_SIZE / 2, -ITEM_SIZE / 2);
                 }
             }
 
@@ -306,11 +277,13 @@ public class RadialScreen extends Screen {
 
         // 7. Render Center Label
         if (hoveredSlot != -1) {
-            String name = (isSubmenu() && hoveredSlot == 0)
-                    ? Component.translatable("radial.ui.back").getString()
-                    : (getTargetSlot(hoveredSlot) != null
-                            ? Objects.requireNonNull(getTargetSlot(hoveredSlot)).name
-                            : "");
+            String name;
+            if (isSubmenu() && hoveredSlot == 0) {
+                name = Component.translatable("radial.ui.back").getString();
+            } else {
+                RadialSlot hovered = getTargetSlot(hoveredSlot);
+                name = hovered != null ? hovered.name : "";
+            }
 
             if (!name.isEmpty()) {
                 int alpha = Mth.clamp((int) (easeOutQuint(getGlobalRevealProgress(config)) * 255.0F + 0.5F), 0, 255);
@@ -345,7 +318,7 @@ public class RadialScreen extends Screen {
         }
 
         int staggerCount = (animation == RadialConfig.RevealAnimation.STAGGERED_BOTH) ? (count / 2) + 1 : count;
-        float step = totalDuration * Mth.clamp(STAGGER_STEP_FRACTION, 0.0F, 0.99F) / (staggerCount - 1);
+        float step = totalDuration * STAGGER_STEP_FRACTION / (staggerCount - 1);
         float elementDuration = Math.max(0.001F, totalDuration - step * (staggerCount - 1));
 
         return Mth.clamp(
@@ -525,7 +498,7 @@ public class RadialScreen extends Screen {
         // Intentionally skip super.extractBackground to remove the dark gradient
 
         if (RadialConfig.INSTANCE.enableBackgroundBlur) {
-            // This will now automatically call the Mixin and animate!
+            // The blur strength is animated by OptionsMixin
             this.extractBlurredBackground(graphics);
         }
     }

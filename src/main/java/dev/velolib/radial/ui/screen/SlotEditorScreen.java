@@ -19,13 +19,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.NonNull;
 
 public class SlotEditorScreen extends Screen {
 
-    private static final Identifier SLOT_TEXTURE =
-            Identifier.fromNamespaceAndPath("minecraft", "gamemode_switcher/slot");
     private static final int SLOT_SIZE = 26;
 
     // LAYOUT CONSTANTS
@@ -209,11 +206,7 @@ public class SlotEditorScreen extends Screen {
                         .getString());
             }
 
-            // Validation & Fallbacks
-            if (pasted.name == null) pasted.name = "";
-            if (pasted.mode == null) pasted.mode = SlotModeRegistry.getDefaultMode();
-            if (pasted.value == null) pasted.value = "";
-            if (pasted.itemId == null) pasted.itemId = "minecraft:air";
+            pasted.sanitize();
 
             // Apply directly onto current slot reference
             this.slot.name = pasted.name;
@@ -221,16 +214,8 @@ public class SlotEditorScreen extends Screen {
             this.slot.value = pasted.value;
             this.slot.itemId = pasted.itemId;
             this.slot.childSlotCount = pasted.childSlotCount;
-            if (pasted.children != null) {
-                this.slot.children = new java.util.ArrayList<>(pasted.children);
-            } else {
-                this.slot.children = null;
-            }
-            if (pasted.macros != null) {
-                this.slot.macros = new java.util.ArrayList<>(pasted.macros);
-            } else {
-                this.slot.macros = null;
-            }
+            this.slot.children = pasted.children;
+            this.slot.macros = pasted.macros;
             this.slot.clearCache();
 
             // Screen native rebuild function refreshes UI with new values
@@ -279,7 +264,8 @@ public class SlotEditorScreen extends Screen {
         int iconY = (nameField != null) ? nameField.getY() - SLOT_SIZE - 20 : height / 2 - 110;
 
         // Draw background slot
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
+        graphics.blitSprite(
+                RenderPipelines.GUI_TEXTURED, SlotRenderHelper.SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
 
         SlotRenderHelper.renderSlotIcon(graphics, slot, centerX - 13, iconY);
 

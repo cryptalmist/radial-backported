@@ -7,13 +7,9 @@ import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.Identifier;
 
 public class PhosphorIconTab extends GridIconTab<PhosphorIconCache.PhosphorIcon> {
-
-    private static final Identifier PHOSPHOR_FONT = Identifier.fromNamespaceAndPath("radial", "phosphor");
 
     public PhosphorIconTab(Consumer<String> onSelect, Runnable onClose) {
         super(onSelect, onClose);
@@ -46,8 +42,8 @@ public class PhosphorIconTab extends GridIconTab<PhosphorIconCache.PhosphorIcon>
             PhosphorIconCache.PhosphorIcon icon,
             boolean hovered) {
         Minecraft client = Minecraft.getInstance();
-        Component component = Component.literal(icon.character())
-                .setStyle(Style.EMPTY.withFont(new FontDescription.Resource(PHOSPHOR_FONT)));
+        Component component =
+                Component.literal(icon.character()).setStyle(Style.EMPTY.withFont(PhosphorIconCache.FONT));
 
         int textWidth = client.font.width(component);
         int textX = x + (getSlotSize() - textWidth) / 2;
