@@ -433,6 +433,13 @@ public class RadialConfigScreen {
             drawAnnulus(graphics, cx, cy, detectionInner, visibleInner);
         }
 
+        // When "Draw Menu Background" is off, the renderer never draws the visible ring, so
+        // there'd otherwise be no indication of the true activation area (e.g. with both
+        // detection boundaries at 0). Show it here instead.
+        if (!config.showActivationZone) {
+            drawAnnulus(graphics, cx, cy, visibleInner, visibleOuter);
+        }
+
         if (detectionOuter > visibleOuter) {
             drawAnnulus(graphics, cx, cy, visibleOuter, detectionOuter);
         }
