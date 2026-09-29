@@ -1,11 +1,11 @@
-name: Release Build
+name: Dev Build
 on:
   push:
     branches: [ "dev" ]
 
 jobs:
   build:
-    name: Build Tagged Release
+    name: Build Dev Snapshot
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
