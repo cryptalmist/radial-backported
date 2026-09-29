@@ -11,12 +11,11 @@ import dev.velolib.radial.api.SlotModeRegistry;
 import dev.velolib.radial.config.adapters.ColorTypeAdapter;
 import dev.velolib.radial.config.adapters.SlotModeTypeAdapter;
 import dev.velolib.radial.ui.screen.RadialScreen;
+import dev.velolib.radial.util.ConfigFiles;
 import java.awt.*;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -32,9 +31,6 @@ public class RadialConfig {
 
     private static final File CONFIG_FILE =
             FabricLoader.getInstance().getConfigDir().resolve("radial.json").toFile();
-
-    private static final File TEMP_FILE =
-            FabricLoader.getInstance().getConfigDir().resolve("radial.json.tmp").toFile();
 
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
@@ -154,19 +150,7 @@ public class RadialConfig {
 
     public static void save() {
         try {
-            try (FileWriter writer = new FileWriter(TEMP_FILE)) {
-                GSON.toJson(INSTANCE, writer);
-            }
-            try {
-                Files.move(
-                        TEMP_FILE.toPath(),
-                        CONFIG_FILE.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                // Some file systems can't replace atomically; a plain replace still beats losing the save
-                Files.move(TEMP_FILE.toPath(), CONFIG_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
+            ConfigFiles.writeJsonAtomically(CONFIG_FILE.toPath(), GSON, INSTANCE);
         } catch (Exception e) {
             RadialClient.LOGGER.error("Critical error during config save!", e);
         }

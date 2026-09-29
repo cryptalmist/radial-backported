@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
@@ -19,17 +20,17 @@ import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class GlyphCache {
 
-    private static List<String> cachedGlyphs;
+    private static List<Glyph> cachedGlyphs;
 
     private GlyphCache() {}
 
-    public static List<String> getGlyphs() {
+    public static List<Glyph> getGlyphs() {
         if (cachedGlyphs != null) {
             return cachedGlyphs;
         }
 
         // Keeps the font's order while skipping characters that appear in several providers
-        Set<String> glyphs = new LinkedHashSet<>();
+        Set<Integer> codePoints = new LinkedHashSet<>();
 
         ResourceManager manager = Minecraft.getInstance().getResourceManager();
         Identifier targetFont = Identifier.fromNamespaceAndPath("minecraft", "font/include/default.json");
@@ -57,11 +58,12 @@ public final class GlyphCache {
                     JsonArray chars = provider.getAsJsonArray("chars");
 
                     for (int j = 0; j < chars.size(); j++) {
-                        for (char c : chars.get(j).getAsString().toCharArray()) {
-                            if (c != '\u0000' && c != ' ') {
-                                glyphs.add(String.valueOf(c));
+                        // Code points rather than chars, so characters outside the BMP aren't split in half
+                        chars.get(j).getAsString().codePoints().forEach(cp -> {
+                            if (cp != 0 && cp != ' ') {
+                                codePoints.add(cp);
                             }
-                        }
+                        });
                     }
                 }
             } catch (Exception e) {
@@ -69,16 +71,37 @@ public final class GlyphCache {
             }
         }
 
-        if (glyphs.isEmpty()) {
+        if (codePoints.isEmpty()) {
             RadialClient.LOGGER.error("Glyph cache parsed empty, using fallback list.");
 
-            glyphs.addAll(List.of(
-                    "★", "☆", "♥", "♦", "♣", "♠", "☠", "☢", "☣", "⚠", "⚡", "↑", "↓", "←", "→", "↕", "↔", "⟳", "✖", "✔",
-                    "⚙", "⌂", "✉", "☺", "☻", "☼", "♀", "♂", "♪", "♫", "►", "◄", "⛄", "⛏"));
+            "★☆♥♦♣♠☠☢☣⚠⚡↑↓←→↕↔⟳✖✔⚙⌂✉☺☻☼♀♂♪♫►◄⛄⛏".codePoints().forEach(codePoints::add);
         }
 
-        cachedGlyphs = List.copyOf(glyphs);
+        cachedGlyphs = codePoints.stream().map(Glyph::of).toList();
 
         return cachedGlyphs;
+    }
+
+    /**
+     * @param name the Unicode character name, or null for code points without one (e.g. private use)
+     * @param hex  the code point formatted as U+XXXX
+     */
+    public record Glyph(String character, String name, String hex, String searchText) {
+
+        private static Glyph of(int codePoint) {
+            String hex = String.format("U+%04X", codePoint);
+            String name = Character.getName(codePoint);
+
+            return new Glyph(
+                    Character.toString(codePoint),
+                    name,
+                    hex,
+                    ((name != null ? name + " " : "") + hex + " " + Integer.toHexString(codePoint))
+                            .toLowerCase(Locale.ROOT));
+        }
+
+        public String displayName() {
+            return name != null ? name : hex;
+        }
     }
 }

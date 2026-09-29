@@ -32,7 +32,7 @@ public class SlotEditorScreen extends Screen {
     private final RadialSlot slot;
 
     // State for reverting changes on cancel
-    private final String oldName, oldValue, oldId;
+    private final String oldName, oldValue, oldId, oldIconColor;
     private final SlotMode oldMode;
     private final int oldChildCount;
     private final List<RadialSlot> oldChildren;
@@ -51,6 +51,7 @@ public class SlotEditorScreen extends Screen {
         this.oldName = slot.name;
         this.oldValue = slot.value;
         this.oldId = slot.itemId;
+        this.oldIconColor = slot.iconColor;
         this.oldMode = slot.mode;
         this.oldChildCount = slot.childSlotCount;
         this.oldChildren = slot.children != null ? new java.util.ArrayList<>(slot.children) : null;
@@ -213,6 +214,7 @@ public class SlotEditorScreen extends Screen {
             this.slot.mode = pasted.mode;
             this.slot.value = pasted.value;
             this.slot.itemId = pasted.itemId;
+            this.slot.iconColor = pasted.iconColor;
             this.slot.childSlotCount = pasted.childSlotCount;
             this.slot.children = pasted.children;
             this.slot.macros = pasted.macros;
@@ -244,6 +246,7 @@ public class SlotEditorScreen extends Screen {
         this.slot.mode = SlotModeRegistry.getDefaultMode();
         this.slot.value = "";
         this.slot.itemId = "minecraft:air";
+        this.slot.iconColor = null;
         this.slot.childSlotCount = 8;
         this.slot.children = null;
         this.slot.macros = null;
@@ -267,7 +270,7 @@ public class SlotEditorScreen extends Screen {
         graphics.blitSprite(
                 RenderPipelines.GUI_TEXTURED, SlotRenderHelper.SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
 
-        SlotRenderHelper.renderSlotIcon(graphics, slot, centerX - 13, iconY);
+        SlotRenderHelper.renderSlotIcon(graphics, slot, centerX - 13, iconY, 255);
 
         // --- THE MOUSE SPOOFING TRICK ---
         boolean hoveringMenu = this.modeDropdown != null
@@ -290,6 +293,7 @@ public class SlotEditorScreen extends Screen {
             slot.name = oldName;
             slot.value = oldValue;
             slot.itemId = oldId;
+            slot.iconColor = oldIconColor;
             slot.mode = oldMode;
             slot.childSlotCount = oldChildCount;
 

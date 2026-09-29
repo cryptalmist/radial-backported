@@ -1,18 +1,19 @@
 package dev.velolib.radial.ui.screen.iconpicker.tabs;
 
+import dev.velolib.radial.render.SlotRenderHelper;
 import dev.velolib.radial.ui.screen.iconpicker.GridIconTab;
+import dev.velolib.radial.ui.screen.iconpicker.IconSearch;
 import dev.velolib.radial.util.PhosphorIconCache;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 
 public class PhosphorIconTab extends GridIconTab<PhosphorIconCache.PhosphorIcon> {
 
-    public PhosphorIconTab(Consumer<String> onSelect, Runnable onClose) {
-        super(onSelect, onClose);
+    public PhosphorIconTab(String currentId, Consumer<String> onSelect, Runnable onClose) {
+        super(currentId, onSelect, onClose);
     }
 
     @Override
@@ -21,15 +22,17 @@ public class PhosphorIconTab extends GridIconTab<PhosphorIconCache.PhosphorIcon>
     }
 
     @Override
-    protected int getSlotSize() {
-        return 20;
+    public boolean accepts(String iconId) {
+        return iconId.startsWith(SlotRenderHelper.PHOSPHOR_PREFIX);
     }
 
     @Override
     protected List<PhosphorIconCache.PhosphorIcon> search(String query) {
-        return PhosphorIconCache.getIcons().stream()
-                .filter(icon -> query.isEmpty() || icon.searchText().contains(query))
-                .toList();
+        return IconSearch.rank(
+                PhosphorIconCache.getIcons(),
+                query,
+                icon -> icon.name().toLowerCase(),
+                PhosphorIconCache.PhosphorIcon::searchText);
     }
 
     @Override
@@ -41,25 +44,17 @@ public class PhosphorIconTab extends GridIconTab<PhosphorIconCache.PhosphorIcon>
             int mouseY,
             PhosphorIconCache.PhosphorIcon icon,
             boolean hovered) {
-        Minecraft client = Minecraft.getInstance();
-        Component component =
-                Component.literal(icon.character()).setStyle(Style.EMPTY.withFont(PhosphorIconCache.FONT));
-
-        int textWidth = client.font.width(component);
-        int textX = x + (getSlotSize() - textWidth) / 2;
-        int textY = y + (getSlotSize() - client.font.lineHeight) / 2 + 5;
-
-        graphics.text(client.font, component, textX, textY, 0xFFFFFFFF, false);
+        SlotRenderHelper.renderIcon(graphics, getIconId(icon), x, y, getSlotSize(), 0xFFFFFFFF, () -> null);
 
         if (hovered) {
-            graphics.setTooltipForNextFrame(client.font, Component.literal(icon.name()), mouseX, mouseY);
+            graphics.setTooltipForNextFrame(
+                    Minecraft.getInstance().font, Component.literal(icon.name()), mouseX, mouseY);
         }
     }
 
     @Override
-    protected void selectIcon(PhosphorIconCache.PhosphorIcon icon) {
-        onSelect.accept("radial:icon." + icon.name());
-        onClose.run();
+    protected String getIconId(PhosphorIconCache.PhosphorIcon icon) {
+        return SlotRenderHelper.PHOSPHOR_PREFIX + icon.name();
     }
 
     @Override

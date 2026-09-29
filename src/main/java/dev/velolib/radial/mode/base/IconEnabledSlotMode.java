@@ -3,12 +3,14 @@ package dev.velolib.radial.mode.base;
 import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotMode;
+import dev.velolib.radial.render.SlotRenderHelper;
 import dev.velolib.radial.ui.screen.iconpicker.IconPickerScreen;
 import dev.velolib.radial.util.EncoderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,6 +22,7 @@ public abstract class IconEnabledSlotMode implements SlotMode {
     private static final int HORIZ_GAP = 5;
     private static final int BUTTON_WIDTH = 55;
     private static final int ROW_HEIGHT = 20;
+    private static final int INVALID_TEXT_COLOR = 0xFFFF5555;
 
     /**
      * Helper to build the "Action Value" label and text field, plus a Select button
@@ -86,6 +89,9 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         // 2. Horizontal row for Field + Buttons
         LinearLayout inputRow = LinearLayout.horizontal().spacing(HORIZ_GAP);
 
+        // Built first so the icon field's responder can enable it for tintable icons
+        EditBox colorField = buildIconColorField(slot, width);
+
         // Icon EditBox
         EditBox iconField = new EditBox(
                 Minecraft.getInstance().font,
@@ -99,17 +105,16 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         iconField.setResponder(v -> {
             slot.itemId = v;
             slot.clearCache();
+            updateIconFieldState(iconField, colorField, v);
         });
+        updateIconFieldState(iconField, colorField, iconField.getValue());
         inputRow.addChild(iconField);
 
-        // Browse Button
+        // Browse Button (setValue runs the responder, which updates the slot)
         Button browseIconButton = Button.builder(
-                        Component.translatable("screen.radial.editor.browse"),
-                        _ -> Minecraft.getInstance().gui.setScreen(new IconPickerScreen(screen, id -> {
-                            iconField.setValue(id);
-                            slot.itemId = id;
-                            slot.clearCache();
-                        })))
+                        Component.translatable("screen.radial.editor.browse"), _ -> Minecraft.getInstance()
+                                .gui
+                                .setScreen(new IconPickerScreen(screen, slot.itemId, iconField::setValue)))
                 .bounds(0, 0, BUTTON_WIDTH, ROW_HEIGHT)
                 .build();
         inputRow.addChild(browseIconButton);
@@ -118,10 +123,7 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         Button handButton = Button.builder(Component.translatable("screen.radial.editor.hand"), _ -> {
                     Minecraft client = Minecraft.getInstance();
                     if (client.player != null && client.level != null) {
-                        String id = getHandItemId(client.player.getMainHandItem(), client);
-                        iconField.setValue(id);
-                        slot.itemId = id;
-                        slot.clearCache();
+                        iconField.setValue(getHandItemId(client.player.getMainHandItem(), client));
                     }
                 })
                 .bounds(0, 0, BUTTON_WIDTH, ROW_HEIGHT)
@@ -131,6 +133,52 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         // Add the horizontal row into the vertical group, then add the group to the main container
         iconGroup.addChild(inputRow);
         container.addChild(iconGroup);
+
+        // 3. Tint color for text-based icons
+        LinearLayout colorGroup = LinearLayout.vertical().spacing(2);
+        colorGroup.addChild(new StringWidget(
+                Component.translatable("screen.radial.editor.icon_color"), Minecraft.getInstance().font));
+        colorGroup.addChild(colorField);
+        container.addChild(colorGroup);
+    }
+
+    private static EditBox buildIconColorField(RadialSlot slot, int width) {
+        EditBox colorField = new EditBox(
+                Minecraft.getInstance().font,
+                0,
+                0,
+                width,
+                ROW_HEIGHT,
+                Component.translatable("screen.radial.editor.icon_color"));
+        colorField.setMaxLength(7);
+        colorField.setValue(slot.iconColor != null ? slot.iconColor : "");
+        colorField.setHint(Component.translatable("screen.radial.editor.icon_color.hint"));
+        colorField.setResponder(v -> {
+            Integer color = RadialSlot.parseIconColor(v);
+            boolean valid = v.isBlank() || color != null;
+            colorField.setTextColor(valid ? EditBox.DEFAULT_TEXT_COLOR : INVALID_TEXT_COLOR);
+
+            // Invalid input leaves the last valid color in place until it's fixed
+            if (valid) {
+                slot.iconColor = color != null ? RadialSlot.formatIconColor(color) : null;
+                slot.clearCache();
+            }
+        });
+
+        return colorField;
+    }
+
+    private static void updateIconFieldState(EditBox iconField, EditBox colorField, String iconId) {
+        boolean valid = SlotRenderHelper.isValidIconId(iconId);
+        iconField.setTextColor(valid ? EditBox.DEFAULT_TEXT_COLOR : INVALID_TEXT_COLOR);
+        iconField.setTooltip(
+                valid ? null : Tooltip.create(Component.translatable("screen.radial.editor.icon.invalid")));
+
+        boolean tintable = SlotRenderHelper.isTintable(iconId);
+        colorField.active = tintable;
+        colorField.setEditable(tintable);
+        colorField.setTooltip(
+                tintable ? null : Tooltip.create(Component.translatable("screen.radial.editor.icon_color.disabled")));
     }
 
     private static String getHandItemId(ItemStack stack, Minecraft client) {

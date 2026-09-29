@@ -266,7 +266,7 @@ public class RadialScreen extends Screen {
             } else {
                 RadialSlot slot = getTargetSlot(i);
                 if (slot != null) {
-                    SlotRenderHelper.renderSlotIcon(graphics, slot, drawOffset, drawOffset);
+                    SlotRenderHelper.renderSlotIcon(graphics, slot, drawOffset, drawOffset, revealAlpha);
                 } else {
                     graphics.item(MISSING_ICON, -ITEM_SIZE / 2, -ITEM_SIZE / 2);
                 }
