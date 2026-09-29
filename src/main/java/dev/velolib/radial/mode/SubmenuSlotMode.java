@@ -39,11 +39,7 @@ public class SubmenuSlotMode extends IconEnabledSlotMode {
 
         while (slot.children.size() < slot.childSlotCount) {
             slot.children.add(new RadialSlot(
-                    "Sub Slot " + (slot.children.size() + 1),
-                    SlotModeRegistry.getRegisteredModes()
-                            .get(net.minecraft.resources.Identifier.fromNamespaceAndPath("radial", "empty")),
-                    "",
-                    "minecraft:stone"));
+                    "Sub Slot " + (slot.children.size() + 1), SlotModeRegistry.getDefaultMode(), "", "minecraft:air"));
         }
     }
 

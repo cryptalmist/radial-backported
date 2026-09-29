@@ -8,9 +8,6 @@ import dev.velolib.radial.mode.base.IconEnabledSlotMode;
 import dev.velolib.radial.ui.screen.ShortcutSelectionScreen;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -60,46 +57,7 @@ public class ShortcutSlotMode extends IconEnabledSlotMode {
 
     @Override
     public void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container) {
-        int HORIZ_GAP = 5;
-        int BROWSE_BTN_WIDTH = 55;
-        int ROW_HEIGHT = 20;
-        int valueFieldWidth = width - BROWSE_BTN_WIDTH - HORIZ_GAP;
-
-        LinearLayout valueGroup = LinearLayout.vertical().spacing(2);
-
-        StringWidget label =
-                new StringWidget(Component.translatable("screen.radial.editor.value"), Minecraft.getInstance().font);
-        valueGroup.addChild(label);
-
-        LinearLayout inputRow = LinearLayout.horizontal().spacing(HORIZ_GAP);
-
-        EditBox valueField = new EditBox(
-                Minecraft.getInstance().font,
-                0,
-                0,
-                valueFieldWidth,
-                ROW_HEIGHT,
-                Component.translatable("screen.radial.editor.value"));
-        valueField.setMaxLength(Integer.MAX_VALUE);
-        valueField.setValue(slot.value != null ? slot.value : "");
-        valueField.setHint(this.getValueHint());
-        valueField.setResponder(v -> slot.value = v);
-        inputRow.addChild(valueField);
-
-        Button valueBrowseButton = Button.builder(
-                        Component.translatable("screen.radial.editor.select"),
-                        _ -> openValuePicker(screen, id -> {
-                            valueField.setValue(id);
-                            slot.value = id;
-                        }))
-                .bounds(0, 0, BROWSE_BTN_WIDTH, ROW_HEIGHT)
-                .build();
-
-        inputRow.addChild(valueBrowseButton);
-
-        valueGroup.addChild(inputRow);
-        container.addChild(valueGroup);
-
+        buildValueRow(screen, slot, width, container);
         buildIconRow(screen, slot, width, container);
     }
 }

@@ -4,8 +4,6 @@ import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotActionContext;
 import dev.velolib.radial.mode.base.IconEnabledSlotMode;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -25,25 +23,7 @@ public class ChatSlotMode extends IconEnabledSlotMode {
 
     @Override
     public void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container) {
-        // Group the Label and EditBox together closely
-        LinearLayout valueGroup = LinearLayout.vertical().spacing(2);
-
-        StringWidget label =
-                new StringWidget(Component.translatable("screen.radial.editor.value"), Minecraft.getInstance().font);
-        valueGroup.addChild(label);
-
-        EditBox valueField = new EditBox(
-                Minecraft.getInstance().font, 0, 0, width, 20, Component.translatable("screen.radial.editor.value"));
-        valueField.setMaxLength(Integer.MAX_VALUE);
-        valueField.setValue(slot.value != null ? slot.value : "");
-        valueField.setHint(this.getValueHint());
-        valueField.setResponder(v -> slot.value = v);
-        valueGroup.addChild(valueField);
-
-        // Add the group to the main container
-        container.addChild(valueGroup);
-
-        // 3. Icon Row
+        buildValueRow(screen, slot, width, container);
         buildIconRow(screen, slot, width, container);
     }
 
