@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen.iconpicker.tabs;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.render.SlotRenderHelper;
 import dev.velolib.radial.ui.screen.iconpicker.IconTab;
 import java.util.ArrayList;
@@ -143,7 +144,7 @@ public class InventoryIconTab implements IconTab {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return false;
+        if (button != InputConstants.MOUSE_BUTTON_LEFT) return false;
 
         int bgX = backgroundX();
         int bgY = backgroundY();

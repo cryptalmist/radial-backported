@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.widget;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotMode;
@@ -26,7 +27,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import org.jspecify.annotations.NonNull;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLMouse;
 
 public class MacroActionList extends ContainerObjectSelectionList<MacroActionList.Row> {
 
@@ -214,7 +215,7 @@ public class MacroActionList extends ContainerObjectSelectionList<MacroActionLis
 
     @Override
     public boolean mouseClicked(@NonNull MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 && this.isMouseOver(event.x(), event.y())) {
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && this.isMouseOver(event.x(), event.y())) {
             if (this.getEntryAtPosition(event.x(), event.y()) instanceof ActionEntry entry
                     && entry.isOverHandle(event.x(), event.y())) {
                 this.startDrag(entry, event.y());
@@ -236,7 +237,7 @@ public class MacroActionList extends ContainerObjectSelectionList<MacroActionLis
 
     @Override
     public boolean mouseReleased(@NonNull MouseButtonEvent event) {
-        if (this.draggedEntry != null && event.button() == 0) {
+        if (this.draggedEntry != null && event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             this.endDrag();
             super.mouseReleased(event);
             return true;
@@ -250,9 +251,8 @@ public class MacroActionList extends ContainerObjectSelectionList<MacroActionLis
     public void extractWidgetRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         if (this.draggedEntry != null) {
             // Safety net in case the release event never reached the list (e.g. window lost focus).
-            // Queries GLFW directly: MouseHandler#isLeftPressed is only updated while no screen is open.
-            long window = this.minecraft.getWindow().handle();
-            if (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_RELEASE) {
+            // Queries SDL directly: MouseHandler#isLeftPressed is only updated while no screen is open.
+            if ((SDLMouse.SDL_GetMouseState(null, null) & SDLMouse.SDL_BUTTON_LMASK) == 0) {
                 this.endDrag();
             } else {
                 this.autoScrollWhileDragging();

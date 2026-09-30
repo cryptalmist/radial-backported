@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.RadialClient;
 import java.util.Arrays;
 import java.util.List;
@@ -173,7 +174,7 @@ public class KeybindPickerScreen extends Screen {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-            if (event.button() != 0) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
                 return false;
             }
 

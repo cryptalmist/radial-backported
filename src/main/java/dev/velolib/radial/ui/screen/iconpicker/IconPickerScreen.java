@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen.iconpicker;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.ui.screen.iconpicker.tabs.*;
 import dev.velolib.radial.util.IconHistory;
 import java.util.ArrayList;
@@ -152,7 +153,7 @@ public class IconPickerScreen extends Screen {
         boolean handled = super.mouseClicked(click, doubled);
 
         // Right-clicking to favorite focuses the icon list; hand focus back so typing keeps searching
-        if (click.button() == 1 && searchField != null && searchField.visible) {
+        if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && searchField != null && searchField.visible) {
             setFocused(searchField);
         }
 

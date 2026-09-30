@@ -20,7 +20,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLMouse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +33,12 @@ public class RadialClient implements ClientModInitializer {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
 
     public static final KeyMapping OPEN_RADIAL = KeyMappingHelper.registerKeyMapping(
-            new KeyMapping("key." + MOD_ID + ".open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, CATEGORY, 0));
+            new KeyMapping("key." + MOD_ID + ".open", InputConstants.Type.KEYBOARD, InputConstants.KEY_R, CATEGORY, 0));
     public static final KeyMapping BACK_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key." + MOD_ID + ".back", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY, 1));
+            "key." + MOD_ID + ".back", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY, 1));
     public static final KeyMapping STOP_MACROS = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key." + MOD_ID + ".stop_macros",
-            InputConstants.Type.KEYSYM,
+            InputConstants.Type.KEYBOARD,
             InputConstants.UNKNOWN.getValue(),
             CATEGORY,
             2));
@@ -48,7 +48,7 @@ public class RadialClient implements ClientModInitializer {
         for (int i = 0; i < 12; i++) {
             SLOT_KEYS[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                     "key." + MOD_ID + ".slot." + (i + 1),
-                    InputConstants.Type.KEYSYM,
+                    InputConstants.Type.KEYBOARD,
                     InputConstants.UNKNOWN.getValue(),
                     CATEGORY,
                     12 + i));
@@ -150,11 +150,9 @@ public class RadialClient implements ClientModInitializer {
         int code = key.getValue();
         if (code == InputConstants.UNKNOWN.getValue()) return false;
 
-        long handle = Minecraft.getInstance().getWindow().handle();
         return switch (key.getType()) {
-            case MOUSE -> GLFW.glfwGetMouseButton(handle, code) == GLFW.GLFW_PRESS;
-            case KEYSYM -> GLFW.glfwGetKey(handle, code) == GLFW.GLFW_PRESS;
-            default -> false;
+            case MOUSE -> (SDLMouse.SDL_GetMouseState(null, null) & (1 << (code - 1))) != 0;
+            case KEYBOARD -> InputConstants.isKeyDown(code);
         };
     }
 

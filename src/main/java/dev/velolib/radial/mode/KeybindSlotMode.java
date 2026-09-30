@@ -16,6 +16,7 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.sdl.SDLKeyboard;
 
 public class KeybindSlotMode extends IconEnabledSlotMode {
 
@@ -70,8 +71,9 @@ public class KeybindSlotMode extends IconEnabledSlotMode {
 
                 if (slot.value.startsWith("key.debug")) {
                     InputConstants.Key inputKey = ((KeyMappingAccessor) key).getKey();
-                    int keyCode = inputKey.getValue();
-                    var dummyEvent = new KeyEvent(keyCode, 0, 0);
+                    int scancode = inputKey.getValue();
+                    int keycode = SDLKeyboard.SDL_GetKeyFromScancode(scancode, (short) 0, false);
+                    var dummyEvent = new KeyEvent(scancode, keycode, 0);
                     client.keyboardHandler.handleDebugKeys(dummyEvent);
                 }
 

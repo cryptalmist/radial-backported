@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotActionContext;
@@ -20,7 +21,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.jspecify.annotations.NonNull;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLMouse;
 
 public class RadialScreen extends Screen {
 
@@ -75,13 +76,13 @@ public class RadialScreen extends Screen {
         RadialConfig.ActivationMode mode = RadialConfig.INSTANCE.activationMode;
         if (mode == RadialConfig.ActivationMode.SCROLL_CLICK || mode == RadialConfig.ActivationMode.SCROLL_RELEASE) {
             hoveredSlot = 0; // Default to first slot in scroll mode
-            GLFW.glfwSetInputMode(minecraft.getWindow().handle(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
+            SDLMouse.SDL_HideCursor();
         }
     }
 
     @Override
     public void removed() {
-        GLFW.glfwSetInputMode(minecraft.getWindow().handle(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        SDLMouse.SDL_ShowCursor();
         super.removed();
     }
 
@@ -350,9 +351,9 @@ public class RadialScreen extends Screen {
         RadialConfig.ActivationMode mode = RadialConfig.INSTANCE.activationMode;
         if (mode == RadialConfig.ActivationMode.CLICK || mode == RadialConfig.ActivationMode.RELEASE) {
             long windowHandle = minecraft.getWindow().handle();
-            double centerX = minecraft.getWindow().getScreenWidth() / 2.0;
-            double centerY = minecraft.getWindow().getScreenHeight() / 2.0;
-            GLFW.glfwSetCursorPos(windowHandle, centerX, centerY);
+            float centerX = minecraft.getWindow().getScreenWidth() / 2.0F;
+            float centerY = minecraft.getWindow().getScreenHeight() / 2.0F;
+            SDLMouse.SDL_WarpMouseInWindow(windowHandle, centerX, centerY);
         }
     }
 
@@ -437,7 +438,7 @@ public class RadialScreen extends Screen {
     @Override
     public boolean mouseClicked(@NonNull MouseButtonEvent click, boolean doubled) {
         if (hoveredSlot != -1) {
-            if (click.button() == 0) {
+            if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
                 if (isSubmenu() && hoveredSlot == 0) {
                     goBack();
                     return true;
@@ -448,7 +449,7 @@ public class RadialScreen extends Screen {
                     performAction(slot);
                     return true;
                 }
-            } else if (click.button() == 1) {
+            } else if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
                 if (isSubmenu() && hoveredSlot == 0) {
                     return true; // Right-clicking "Back" does nothing
                 }
@@ -461,7 +462,7 @@ public class RadialScreen extends Screen {
             }
         }
 
-        if (click.button() == 0) {
+        if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             onClose();
             return true;
         }

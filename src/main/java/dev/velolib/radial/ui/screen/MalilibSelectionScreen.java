@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.integration.MalilibIntegration;
 import dev.velolib.radial.integration.MalilibIntegration.MalilibAction;
 import java.util.ArrayList;
@@ -233,7 +234,7 @@ public class MalilibSelectionScreen extends Screen {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-            if (event.button() != 0) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
                 return false;
             }
 

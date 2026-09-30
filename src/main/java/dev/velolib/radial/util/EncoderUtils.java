@@ -1,12 +1,11 @@
 package dev.velolib.radial.util;
 
 import com.mojang.serialization.Codec;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -44,35 +43,38 @@ public class EncoderUtils {
             RegistryOps<Tag> registryOps = registries.createSerializationContext(NbtOps.INSTANCE);
             boolean first = true;
 
-            for (Map.Entry<DataComponentType<?>, Optional<?>> entry : patch.entrySet()) {
-                DataComponentType<?> type = entry.getKey();
+            DataComponentPatch.SplitResult split = patch.split();
+
+            for (TypedDataComponent<?> component : split.added()) {
+                DataComponentType<?> type = component.type();
                 Identifier typeId = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type);
-                Optional<?> value = entry.getValue();
 
-                if (value.isPresent()) {
-                    // Added or modified component
-                    Codec<Object> codec = (Codec<Object>) type.codec();
+                // Added or modified component
+                Codec<Object> codec = (Codec<Object>) type.codec();
 
-                    // Transient components lacking a codec cannot be expressed in a command
-                    if (codec != null) {
-                        if (!first) command.append(",");
-                        first = false;
-
-                        command.append(Objects.requireNonNull(typeId)).append("=");
-
-                        // Encode the component object back to an NBT Tag
-                        Tag tag = codec.encodeStart(registryOps, value.get()).getOrThrow();
-
-                        // Tag#toString natively produces a compliant SNBT string in 1.21
-                        command.append(tag);
-                    }
-                } else {
-                    // A default component that was explicitly removed is prefixed with an exclamation mark
+                // Transient components lacking a codec cannot be expressed in a command
+                if (codec != null) {
                     if (!first) command.append(",");
                     first = false;
 
-                    command.append("!").append(Objects.requireNonNull(typeId).toString());
+                    command.append(Objects.requireNonNull(typeId)).append("=");
+
+                    // Encode the component object back to an NBT Tag
+                    Tag tag = codec.encodeStart(registryOps, component.value()).getOrThrow();
+
+                    // Tag#toString natively produces a compliant SNBT string in 1.21
+                    command.append(tag);
                 }
+            }
+
+            for (DataComponentType<?> type : split.removed()) {
+                Identifier typeId = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type);
+
+                // A default component that was explicitly removed is prefixed with an exclamation mark
+                if (!first) command.append(",");
+                first = false;
+
+                command.append("!").append(Objects.requireNonNull(typeId).toString());
             }
             command.append("]");
         }

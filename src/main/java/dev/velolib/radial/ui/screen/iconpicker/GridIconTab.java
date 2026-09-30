@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen.iconpicker;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.util.IconHistory;
 import java.util.ArrayList;
 import java.util.List;
@@ -289,7 +290,8 @@ public abstract class GridIconTab<T> implements IconTab {
 
         @Override
         public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-            if (event.button() != 0 && event.button() != 1) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT
+                    && event.button() != InputConstants.MOUSE_BUTTON_RIGHT) {
                 return false;
             }
 
@@ -300,7 +302,7 @@ public abstract class GridIconTab<T> implements IconTab {
                 int y = getContentY() + verticalOffset;
 
                 if (event.x() >= x && event.x() < x + SLOT_SIZE && event.y() >= y && event.y() < y + SLOT_SIZE) {
-                    if (event.button() == 1) {
+                    if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
                         IconHistory.toggleFavorite(getIconId(items.get(i)));
                         onFavoritesChanged();
                     } else {

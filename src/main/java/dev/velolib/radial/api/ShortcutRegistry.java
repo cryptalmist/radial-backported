@@ -34,7 +34,7 @@ public class ShortcutRegistry {
                 Identifier.fromNamespaceAndPath("radial", "options"),
                 new ShortcutEntry(Component.translatable("menu.options"), (parent) -> {
                     Minecraft client = Minecraft.getInstance();
-                    client.gui.setScreen(new OptionsScreen(parent, client.options, true));
+                    client.gui.setScreen(new OptionsScreen(parent, client.options));
                 }));
 
         // Video Settings
