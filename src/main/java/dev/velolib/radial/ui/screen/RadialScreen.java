@@ -31,14 +31,18 @@ public class RadialScreen extends Screen {
 
     private static final int SLOT_SIZE = 26;
     private static final int ITEM_SIZE = 16;
-    private static final float SLOT_PUSH = 7.5F;
-    private static final float SLOT_HOVER_SCALE = 0.1F;
+    // How far a hovered slot moves outward, and how much it grows
+    public static final float SLOT_PUSH = 7.5F;
+    public static final float SLOT_HOVER_SCALE = 0.1F;
     private static final float STAGGER_STEP_FRACTION = 0.4F;
 
     // The maximum possible renderable slots (12 config slots + 1 submenu back button)
     private static final int MAX_RENDER_SLOTS = 13;
 
     private static final DonutRenderer SECTOR_RENDERER = new DonutRenderer("main");
+
+    private static final ItemStack BACK_ICON = new ItemStack(Items.ARROW);
+    private static final ItemStack MISSING_ICON = new ItemStack(Items.BARRIER);
 
     private record MenuState(List<RadialSlot> slots, int slotCount) {}
 
@@ -52,6 +56,7 @@ public class RadialScreen extends Screen {
     private int hoveredSlot = -1;
 
     private double revealElapsedSeconds = 0.0;
+    private double menuElapsedSeconds = 0.0;
     private long lastNano;
 
     public RadialScreen() {
@@ -192,6 +197,7 @@ public class RadialScreen extends Screen {
         float dt = (float) Math.min((now - lastNano) / 1.0e9, 0.1);
         lastNano = now;
         revealElapsedSeconds += dt;
+        menuElapsedSeconds += dt;
 
         int cx = width / 2;
         int cy = height / 2;
@@ -233,7 +239,9 @@ public class RadialScreen extends Screen {
         // 5. Render Sectors (Background Ring)
         if (config.showActivationZone) {
             for (int i = 0; i < renderCount; i++) {
-                float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * pushAnim[i] : 0.0F;
+                // Apply the easing curve to the background sectors
+                float smoothedHover = easeOutCubic(pushAnim[i]);
+                float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * smoothedHover : 0.0F;
                 float slotAngle = (float) ((Math.PI * 2.0 / renderCount) * i - Math.PI / 2.0);
                 float revealEase = easeOutQuint(getRevealProgress(i, renderCount, config));
 
@@ -251,15 +259,16 @@ public class RadialScreen extends Screen {
             int revealAlpha = MathHelper.clamp((int) (revealEase * 255.0F + 0.5F), 0, 255);
             if (revealAlpha <= 0) continue;
 
+            float smoothedHover = easeOutCubic(pushAnim[i]);
             float slotAngle = (float) ((Math.PI * 2.0 / renderCount) * i - Math.PI / 2.0);
-            float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * pushAnim[i] : 0.0F;
+            float hoverPush = config.enableHoverAnimation ? SLOT_PUSH * smoothedHover : 0.0F;
             float finalRadius = (config.slotRadius * revealEase) + (hoverPush * revealEase);
 
             float slotX = (float) (cx + Math.cos(slotAngle) * finalRadius);
             float slotY = (float) (cy + Math.sin(slotAngle) * finalRadius);
 
             float scale = revealEase
-                    * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * (i == hoveredSlot ? 1.0F : 0.0F) : 1.0F);
+                    * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * smoothedHover : 1.0F);
 
             graphics.getMatrices().pushMatrix();
             graphics.getMatrices().translate(slotX, slotY);
@@ -275,13 +284,13 @@ public class RadialScreen extends Screen {
             }
 
             if (isSubmenu() && i == 0) {
-                graphics.drawItem(new ItemStack(Items.ARROW), -ITEM_SIZE / 2, -ITEM_SIZE / 2);
+                graphics.drawItem(BACK_ICON, -ITEM_SIZE / 2, -ITEM_SIZE / 2);
             } else {
                 RadialSlot slot = getTargetSlot(i);
                 if (slot != null) {
                     SlotRenderHelper.renderSlotIcon(graphics, slot, drawOffset, drawOffset);
                 } else {
-                    graphics.drawItem(new ItemStack(Items.BARRIER), -ITEM_SIZE / 2, -ITEM_SIZE / 2);
+                    graphics.drawItem(MISSING_ICON, -ITEM_SIZE / 2, -ITEM_SIZE / 2);
                 }
             }
 
@@ -331,7 +340,7 @@ public class RadialScreen extends Screen {
         RadialConfig.RevealAnimation animation = config.revealAnimation;
 
         if (animation == RadialConfig.RevealAnimation.ZOOM || count <= 1) {
-            return MathHelper.clamp((float) (revealElapsedSeconds / totalDuration), 0.0F, 1.0F);
+            return MathHelper.clamp((float) (menuElapsedSeconds / totalDuration), 0.0F, 1.0F);
         }
 
         int staggerCount = (animation == RadialConfig.RevealAnimation.STAGGERED_BOTH) ? (count / 2) + 1 : count;
@@ -339,7 +348,7 @@ public class RadialScreen extends Screen {
         float elementDuration = Math.max(0.001F, totalDuration - step * (staggerCount - 1));
 
         return MathHelper.clamp(
-                ((float) revealElapsedSeconds - (step * getStaggerIndex(index, count, animation))) / elementDuration,
+                ((float) menuElapsedSeconds - (step * getStaggerIndex(index, count, animation))) / elementDuration,
                 0.0F,
                 1.0F);
     }
@@ -353,6 +362,12 @@ public class RadialScreen extends Screen {
         value = MathHelper.clamp(value, 0.0F, 1.0F);
         float inverse = 1.0F - value;
         return 1.0F - inverse * inverse * inverse * inverse * inverse;
+    }
+
+    public float easeOutCubic(float value) {
+        value = MathHelper.clamp(value, 0.0F, 1.0F);
+        float inverse = 1.0F - value;
+        return 1.0F - inverse * inverse * inverse;
     }
 
     // --- Input & Actions ---
@@ -427,7 +442,7 @@ public class RadialScreen extends Screen {
                         ? 0
                         : -1;
 
-        revealElapsedSeconds = 0.0;
+        menuElapsedSeconds = 0.0;
         lastNano = System.nanoTime();
     }
 

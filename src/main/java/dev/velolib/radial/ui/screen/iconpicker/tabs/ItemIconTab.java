@@ -1,8 +1,13 @@
 package dev.velolib.radial.ui.screen.iconpicker.tabs;
 
+import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.ui.screen.iconpicker.GridIconTab;
+import dev.velolib.radial.ui.screen.iconpicker.IconSearch;
+import dev.velolib.radial.util.EncoderUtils;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -10,17 +15,21 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
 public class ItemIconTab extends GridIconTab<ItemIconTab.ItemSearchEntry> {
 
     private static List<ItemSearchEntry> ITEM_INDEX;
+
+    // The registries the index was built against; a new world or server means different variants
+    private static RegistryWrapper.WrapperLookup indexedRegistries;
+
     private String lastQuery = "";
     private List<ItemSearchEntry> lastResults = new ArrayList<>();
 
-    public ItemIconTab(Consumer<String> onSelect, Runnable onClose) {
-        super(onSelect, onClose);
+    public ItemIconTab(String currentId, Consumer<String> onSelect, Runnable onClose) {
+        super(currentId, onSelect, onClose);
         ensureItemIndex();
     }
 
@@ -30,8 +39,8 @@ public class ItemIconTab extends GridIconTab<ItemIconTab.ItemSearchEntry> {
     }
 
     @Override
-    protected int getSlotSize() {
-        return 20;
+    public boolean accepts(String iconId) {
+        return !iconId.startsWith("radial:");
     }
 
     @Override
@@ -52,10 +61,11 @@ public class ItemIconTab extends GridIconTab<ItemIconTab.ItemSearchEntry> {
             }
         }
 
+        // Narrowing keeps index order; ranking happens on a separate copy so ties stay in index order
         lastQuery = query;
         lastResults = results;
 
-        return results;
+        return IconSearch.rank(results, query, ItemSearchEntry::lowerName, ItemSearchEntry::searchText);
     }
 
     @Override
@@ -76,9 +86,8 @@ public class ItemIconTab extends GridIconTab<ItemIconTab.ItemSearchEntry> {
     }
 
     @Override
-    protected void selectIcon(ItemSearchEntry item) {
-        onSelect.accept(item.id().toString());
-        onClose.run();
+    protected String getIconId(ItemSearchEntry item) {
+        return item.id();
     }
 
     @Override
@@ -87,20 +96,60 @@ public class ItemIconTab extends GridIconTab<ItemIconTab.ItemSearchEntry> {
     }
 
     private static void ensureItemIndex() {
-        if (ITEM_INDEX != null) return;
+        MinecraftClient client = MinecraftClient.getInstance();
+        RegistryWrapper.WrapperLookup registries = client.world != null ? client.world.getRegistryManager() : null;
 
-        List<ItemSearchEntry> index = new ArrayList<>(Registries.ITEM.size());
+        if (ITEM_INDEX != null && indexedRegistries == registries) return;
 
-        for (Item item : Registries.ITEM) {
-            Identifier id = Registries.ITEM.getId(item);
-            ItemStack stack = item.getDefaultStack();
-            String name = stack.getName().getString();
+        Map<String, ItemSearchEntry> index = new LinkedHashMap<>();
 
-            index.add(new ItemSearchEntry(item, stack, id, name, (id + " " + name).toLowerCase()));
+        // Creative search tab contents include variants such as potions, enchanted books and goat horns
+        if (registries != null && client.player != null) {
+            for (ItemStack stack : getCreativeSearchItems(client, registries)) {
+                addEntry(index, stack, encodeId(stack, registries));
+            }
         }
 
-        ITEM_INDEX = List.copyOf(index);
+        // Anything the creative tabs leave out (air, operator items without permission, unlisted mod items)
+        for (Item item : Registries.ITEM) {
+            String id = Registries.ITEM.getId(item).toString();
+            if (!index.containsKey(id)) {
+                addEntry(index, item.getDefaultStack(), id);
+            }
+        }
+
+        ITEM_INDEX = List.copyOf(index.values());
+        indexedRegistries = registries;
     }
 
-    public record ItemSearchEntry(Item item, ItemStack stack, Identifier id, String displayName, String searchText) {}
+    private static List<ItemStack> getCreativeSearchItems(
+            MinecraftClient client, RegistryWrapper.WrapperLookup registries) {
+        try {
+            boolean hasPermissions = client.player.isCreativeLevelTwoOp()
+                    && client.options.getOperatorItemsTab().getValue();
+
+            net.minecraft.item.ItemGroups.updateDisplayContext(
+                    client.player.networkHandler.getEnabledFeatures(), hasPermissions, registries);
+
+            return List.copyOf(net.minecraft.item.ItemGroups.getSearchGroup().getDisplayStacks());
+        } catch (Exception e) {
+            RadialClient.LOGGER.warn("Failed to read creative tab items, listing default items only", e);
+            return List.of();
+        }
+    }
+
+    private static String encodeId(ItemStack stack, RegistryWrapper.WrapperLookup registries) {
+        try {
+            return EncoderUtils.toGiveCommandString(stack, registries);
+        } catch (Exception e) {
+            return Registries.ITEM.getId(stack.getItem()).toString();
+        }
+    }
+
+    private static void addEntry(Map<String, ItemSearchEntry> index, ItemStack stack, String id) {
+        String lowerName = stack.getName().getString().toLowerCase();
+        index.putIfAbsent(id, new ItemSearchEntry(stack, id, lowerName, (id + " " + lowerName).toLowerCase()));
+    }
+
+    public record ItemSearchEntry(ItemStack stack, String id, String lowerName, String searchText) {}
 }

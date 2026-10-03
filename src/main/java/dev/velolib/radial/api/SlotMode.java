@@ -1,6 +1,8 @@
 package dev.velolib.radial.api;
 
 import dev.velolib.radial.ui.screen.SlotEditorScreen;
+import java.util.function.Consumer;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
 import net.minecraft.text.Text;
 
@@ -21,6 +23,46 @@ public interface SlotMode {
     default boolean shouldRenderIcon() {
         return true;
     }
+
+    /**
+     * Determines if this mode can be picked as an action type inside a macro.
+     * Modes that depend on the radial menu being open (like Submenus) should return false.
+     */
+    default boolean isMacroAction() {
+        return true;
+    }
+
+    /**
+     * Determines if this mode is exclusive to macros (like Delay).
+     * Macro-only modes are hidden from the slot mode selection menu.
+     */
+    default boolean isMacroOnly() {
+        return false;
+    }
+
+    /**
+     * The placeholder shown in this mode's Action Value field, both in the slot editor
+     * and in a macro action row using this mode.
+     */
+    default Text getValueHint() {
+        return Text.translatable("screen.radial.editor.value");
+    }
+
+    /**
+     * Determines if this mode offers a picker screen for choosing its value.
+     */
+    default boolean hasValuePicker() {
+        return false;
+    }
+
+    /**
+     * Opens this mode's value picker. The picker must return to {@code parent} when closed.
+     * Only called when {@link #hasValuePicker()} returns true.
+     *
+     * @param parent   The screen to return to.
+     * @param onSelect Receives the chosen value.
+     */
+    default void openValuePicker(Screen parent, Consumer<String> onSelect) {}
 
     /**
      * Should this mode execute its action if the radial menu hotkey is released while hovering?

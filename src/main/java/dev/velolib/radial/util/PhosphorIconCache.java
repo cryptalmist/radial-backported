@@ -8,68 +8,79 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
+import net.minecraft.text.StyleSpriteSource;
 import net.minecraft.util.Identifier;
 
 public final class PhosphorIconCache {
+
+    public static final StyleSpriteSource FONT =
+            new StyleSpriteSource.Font(Identifier.of("radial", "phosphor"));
 
     private static final Gson GSON = new Gson();
 
     private static final Type ICON_LIST_TYPE = new TypeToken<List<PhosphorIcon>>() {}.getType();
 
     private static List<PhosphorIcon> cachedIcons;
+    private static Map<String, PhosphorIcon> iconsByName;
 
     private PhosphorIconCache() {}
 
     public static List<PhosphorIcon> getIcons() {
-
         if (cachedIcons != null) {
             return cachedIcons;
         }
 
-        cachedIcons = new ArrayList<>();
+        cachedIcons = List.of();
+        iconsByName = Map.of();
 
         ResourceManager manager = MinecraftClient.getInstance().getResourceManager();
-
-        var identifier = Identifier.of("radial", "phosphor/icons.json");
-
+        Identifier identifier = Identifier.of("radial", "phosphor/icons.json");
         Optional<Resource> resource = manager.getResource(identifier);
 
         if (resource.isEmpty()) {
-
             RadialClient.LOGGER.error("Phosphor icon catalog not found: {}", identifier);
-
             return cachedIcons;
         }
 
         try (Reader reader =
                 new BufferedReader(new InputStreamReader(resource.get().getInputStream(), StandardCharsets.UTF_8))) {
-
             List<PhosphorIcon> icons = GSON.fromJson(reader, ICON_LIST_TYPE);
 
             if (icons != null) {
                 cachedIcons = List.copyOf(icons);
+
+                Map<String, PhosphorIcon> byName = new HashMap<>(cachedIcons.size() * 2);
+                for (PhosphorIcon icon : cachedIcons) {
+                    byName.putIfAbsent(icon.name(), icon);
+                }
+                iconsByName = byName;
             }
-
         } catch (Exception e) {
-
             RadialClient.LOGGER.error("Failed to load Phosphor icon catalog.", e);
         }
 
         return cachedIcons;
     }
 
+    /**
+     * Looks up an icon by name, or returns null if the catalog has no icon with that name.
+     */
+    public static PhosphorIcon getIcon(String name) {
+        getIcons();
+        return iconsByName.get(name);
+    }
+
     public record PhosphorIcon(String name, int codepoint, List<String> tags) {
 
         public String searchText() {
-
             if (tags == null || tags.isEmpty()) {
-
                 return name.toLowerCase();
             }
 
@@ -77,7 +88,6 @@ public final class PhosphorIconCache {
         }
 
         public String character() {
-
             return new String(Character.toChars(codepoint));
         }
     }

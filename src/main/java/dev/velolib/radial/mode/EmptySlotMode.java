@@ -14,6 +14,11 @@ public class EmptySlotMode extends IconEnabledSlotMode {
     }
 
     @Override
+    public boolean isMacroAction() {
+        return false; // A "do nothing" step is pointless inside a macro
+    }
+
+    @Override
     public boolean activateOnRelease() {
         return false; // Don't trigger when releasing on empty slots
     }

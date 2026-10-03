@@ -1,5 +1,6 @@
 package dev.velolib.radial.render;
 
+import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.config.RadialConfig;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.MinecraftClient;
@@ -110,8 +111,7 @@ public class DonutRenderer implements AutoCloseable {
             return;
         }
 
-        texSize = requiredTexSize;
-        regenerateTextures(count, inner, outer, resScale, config);
+        regenerateTextures(requiredTexSize, count, inner, outer, resScale, config);
 
         lastCount = count;
         lastInner = inner;
@@ -196,9 +196,8 @@ public class DonutRenderer implements AutoCloseable {
      * gracefully discard their results. GPU texture registration is safely delegated back
      * to the main Minecraft thread.
      */
-    private void regenerateTextures(int count, float inner, float outer, float resScale, RadialConfig config) {
+    private void regenerateTextures(int targetTexSize, int count, float inner, float outer, float resScale, RadialConfig config) {
         final long currentGenId = ++this.generationId;
-        final int targetTexSize = this.texSize;
 
         final int bgColor = config.backgroundColor.getRGB();
         final int borderColor = config.borderColor.getRGB();
@@ -211,23 +210,33 @@ public class DonutRenderer implements AutoCloseable {
 
         CompletableFuture.supplyAsync(() -> {
                     NativeImage baseImage = new NativeImage(targetTexSize, targetTexSize, false);
-                    NativeImage hotImage = new NativeImage(targetTexSize, targetTexSize, false);
+                    NativeImage hotImage = null;
 
-                    generatePixels(
-                            baseImage,
-                            hotImage,
-                            count,
-                            inner,
-                            outer,
-                            resScale,
-                            bgColor,
-                            borderColor,
-                            hotColor,
-                            hotBorderColor,
-                            drawSectorBorders,
-                            drawOuterBorders,
-                            sectorBorderWidth,
-                            sectorGap);
+                    try {
+                        hotImage = new NativeImage(targetTexSize, targetTexSize, false);
+
+                        generatePixels(
+                                baseImage,
+                                hotImage,
+                                targetTexSize,
+                                count,
+                                inner,
+                                outer,
+                                resScale,
+                                bgColor,
+                                borderColor,
+                                hotColor,
+                                hotBorderColor,
+                                drawSectorBorders,
+                                drawOuterBorders,
+                                sectorBorderWidth,
+                                sectorGap);
+                    } catch (RuntimeException e) {
+                        // Free the native memory before reporting the failure
+                        baseImage.close();
+                        if (hotImage != null) hotImage.close();
+                        throw e;
+                    }
 
                     return new NativeImage[] {baseImage, hotImage};
                 })
@@ -242,6 +251,8 @@ public class DonutRenderer implements AutoCloseable {
 
                             if (this.baseTexture != null) this.baseTexture.close();
                             if (this.hotTexture != null) this.hotTexture.close();
+
+                            this.texSize = targetTexSize;
 
                             this.baseTexture = new NativeImageBackedTexture(() -> "", images[0]);
                             this.hotTexture = new NativeImageBackedTexture(() -> "", images[1]);
@@ -258,7 +269,11 @@ public class DonutRenderer implements AutoCloseable {
                                     .getTextureManager()
                                     .registerTexture(this.hotTexId, this.hotTexture);
                         },
-                        MinecraftClient.getInstance());
+                        MinecraftClient.getInstance())
+                .exceptionally(e -> {
+                    RadialClient.LOGGER.error("Failed to generate radial sector textures", e);
+                    return null;
+                });
     }
 
     /**
@@ -275,6 +290,7 @@ public class DonutRenderer implements AutoCloseable {
     private void generatePixels(
             NativeImage baseImage,
             NativeImage hotImage,
+            int texSize,
             int count,
             float inner,
             float outer,

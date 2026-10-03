@@ -1,10 +1,10 @@
 package dev.velolib.radial.mixin;
 
+import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.ui.screen.RadialScreen;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,12 +22,7 @@ public class KeyMappingMixin {
             KeyBinding self = (KeyBinding) (Object) this;
 
             if (self.getCategory().equals(KeyBinding.Category.MOVEMENT)) {
-
-                int keyCode = KeyBindingHelper.getBoundKeyOf(self).getCode();
-                long handle = client.getWindow().getHandle();
-                boolean isPhysicallyPressed = GLFW.glfwGetKey(handle, keyCode) == GLFW.GLFW_PRESS;
-
-                cir.setReturnValue(isPhysicallyPressed);
+                cir.setReturnValue(RadialClient.isPhysicallyDown(KeyBindingHelper.getBoundKeyOf(self)));
             }
         }
     }

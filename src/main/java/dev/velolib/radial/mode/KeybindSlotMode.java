@@ -10,11 +10,8 @@ import java.util.HashMap;
 import java.util.function.Consumer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.TextWidget;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -46,44 +43,24 @@ public class KeybindSlotMode extends IconEnabledSlotMode {
     }
 
     @Override
+    public Text getValueHint() {
+        return Text.translatable("screen.radial.editor.hint.keybind");
+    }
+
+    @Override
+    public boolean hasValuePicker() {
+        return true;
+    }
+
+    @Override
+    public void openValuePicker(Screen parent, Consumer<String> onSelect) {
+        MinecraftClient.getInstance().setScreen(new KeybindPickerScreen(parent, onSelect));
+    }
+
+    @Override
     public void buildEditorWidgets(
             SlotEditorScreen screen, RadialSlot slot, int width, DirectionalLayoutWidget container) {
-        int HORIZ_GAP = 5;
-        int BROWSE_BTN_WIDTH = 55;
-        int ROW_HEIGHT = 20;
-        int valueFieldWidth = width - BROWSE_BTN_WIDTH - HORIZ_GAP;
-
-        // Group the label and row together vertically
-        DirectionalLayoutWidget valueGroup = DirectionalLayoutWidget.vertical().spacing(2);
-
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        TextWidget label = new TextWidget(Text.translatable("screen.radial.editor.value"), textRenderer);
-        valueGroup.add(label);
-
-        // Horizontal row for the field + picker button
-        DirectionalLayoutWidget inputRow = DirectionalLayoutWidget.horizontal().spacing(HORIZ_GAP);
-
-        TextFieldWidget valueField = new TextFieldWidget(
-                textRenderer, 0, 0, valueFieldWidth, ROW_HEIGHT, Text.translatable("screen.radial.editor.value"));
-        valueField.setMaxLength(Integer.MAX_VALUE);
-        valueField.setText(slot.value != null ? slot.value : "");
-        valueField.setChangedListener(v -> slot.value = v);
-        inputRow.add(valueField);
-
-        ButtonWidget valueBrowseButton = ButtonWidget.builder(
-                        Text.translatable("screen.radial.editor.select"),
-                        unused -> MinecraftClient.getInstance().setScreen(new KeybindPickerScreen(screen, id -> {
-                            valueField.setText(id);
-                            slot.value = id;
-                        })))
-                .dimensions(0, 0, BROWSE_BTN_WIDTH, ROW_HEIGHT)
-                .build();
-        inputRow.add(valueBrowseButton);
-
-        valueGroup.add(inputRow);
-        container.add(valueGroup);
-
-        // Icon Row
+        buildValueRow(screen, slot, width, container);
         buildIconRow(screen, slot, width, container);
     }
 

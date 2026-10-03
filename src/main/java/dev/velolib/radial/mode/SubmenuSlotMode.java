@@ -20,6 +20,11 @@ public class SubmenuSlotMode extends IconEnabledSlotMode {
     }
 
     @Override
+    public boolean isMacroAction() {
+        return false; // Submenus need the radial menu to be open
+    }
+
+    @Override
     public boolean activateOnRelease() {
         return false; // Submenus only open on click, not hover release
     }

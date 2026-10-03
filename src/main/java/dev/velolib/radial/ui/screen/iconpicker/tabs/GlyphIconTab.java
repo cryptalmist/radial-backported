@@ -1,16 +1,21 @@
 package dev.velolib.radial.ui.screen.iconpicker.tabs;
 
+import dev.velolib.radial.render.SlotRenderHelper;
 import dev.velolib.radial.ui.screen.iconpicker.GridIconTab;
+import dev.velolib.radial.ui.screen.iconpicker.IconSearch;
+import dev.velolib.radial.util.GlyphCache;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
-public class GlyphIconTab extends GridIconTab<String> {
+public class GlyphIconTab extends GridIconTab<GlyphCache.Glyph> {
 
-    public GlyphIconTab(Consumer<String> onSelect, Runnable onClose) {
-        super(onSelect, onClose);
+    public GlyphIconTab(String currentId, Consumer<String> onSelect, Runnable onClose) {
+        super(currentId, onSelect, onClose);
     }
 
     @Override
@@ -19,36 +24,48 @@ public class GlyphIconTab extends GridIconTab<String> {
     }
 
     @Override
-    protected int getSlotSize() {
-        return 20;
+    public boolean accepts(String iconId) {
+        return iconId.startsWith(SlotRenderHelper.GLYPH_PREFIX);
     }
 
     @Override
-    protected List<String> search(String query) {
-        return dev.velolib.radial.util.GlyphCache.getGlyphs().stream()
-                .filter(glyph -> glyph.toLowerCase().contains(query))
-                .toList();
+    protected List<GlyphCache.Glyph> search(String query) {
+        return IconSearch.rank(
+                GlyphCache.getGlyphs(),
+                query,
+                glyph -> glyph.displayName().toLowerCase(Locale.ROOT),
+                GlyphCache.Glyph::searchText);
     }
 
     @Override
     protected void renderIcon(
-            DrawContext graphics, int x, int y, int mouseX, int mouseY, String glyph, boolean hovered) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        int textWidth = client.textRenderer.getWidth(glyph);
-        int textX = x + (getSlotSize() - textWidth) / 2;
-        int textY = y + (getSlotSize() - client.textRenderer.fontHeight) / 2;
+            DrawContext graphics,
+            int x,
+            int y,
+            int mouseX,
+            int mouseY,
+            GlyphCache.Glyph glyph,
+            boolean hovered) {
+        SlotRenderHelper.renderIcon(graphics, getIconId(glyph), x, y, getSlotSize(), 0xFFFFFFFF, () -> null);
 
-        graphics.drawText(client.textRenderer, glyph, textX, textY, 0xFFFFFFFF, true);
+        if (hovered) {
+            List<Text> lines = glyph.name() != null
+                    ? List.of(
+                            Text.literal(glyph.name()),
+                            Text.literal(glyph.hex()).formatted(Formatting.DARK_GRAY))
+                    : List.of(Text.literal(glyph.hex()));
+
+            graphics.drawTooltip(MinecraftClient.getInstance().textRenderer, lines, mouseX, mouseY);
+        }
     }
 
     @Override
-    protected void selectIcon(String glyph) {
-        onSelect.accept("radial:glyph." + glyph);
-        onClose.run();
+    protected String getIconId(GlyphCache.Glyph glyph) {
+        return SlotRenderHelper.GLYPH_PREFIX + glyph.character();
     }
 
     @Override
-    protected Text getItemNarration(String glyph) {
-        return Text.literal(glyph);
+    protected Text getItemNarration(GlyphCache.Glyph glyph) {
+        return Text.literal(glyph.displayName());
     }
 }

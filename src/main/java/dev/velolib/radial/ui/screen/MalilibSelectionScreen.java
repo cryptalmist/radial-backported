@@ -35,7 +35,7 @@ public class MalilibSelectionScreen extends Screen {
 
     public MalilibSelectionScreen(Screen parent, Consumer<MalilibAction> onSelect) {
 
-        super(Text.literal("Select Malilib Action"));
+        super(Text.translatable("screen.radial.malilib_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
@@ -176,7 +176,7 @@ public class MalilibSelectionScreen extends Screen {
 
         if (actionsByMod.isEmpty()) {
             graphics.drawCenteredTextWithShadow(
-                    textRenderer, "No Malilib mods found or no hotkeys available.", width / 2, height / 2, 0xFF555555);
+                    textRenderer, Text.translatable("screen.radial.malilib_picker.empty"), width / 2, height / 2, 0xFF555555);
 
             super.render(graphics, mouseX, mouseY, delta);
 

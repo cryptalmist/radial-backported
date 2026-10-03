@@ -6,6 +6,7 @@ import dev.isxander.yacl3.api.utils.Dimension;
 import dev.isxander.yacl3.gui.AbstractWidget;
 import dev.isxander.yacl3.gui.YACLScreen;
 import dev.velolib.radial.api.RadialSlot;
+import dev.velolib.radial.mode.MacroSlotMode;
 import dev.velolib.radial.mode.SubmenuSlotMode;
 import dev.velolib.radial.render.DonutRenderer;
 import java.awt.*;
@@ -309,6 +310,10 @@ public class RadialConfigScreen {
         if (slots == null || slots.isEmpty()) return;
 
         for (RadialSlot slot : slots) {
+            if (!(slot.mode instanceof MacroSlotMode) && slot.macros != null) {
+                slot.macros.clear();
+            }
+
             if (!(slot.mode instanceof SubmenuSlotMode)) {
                 if (slot.children != null) {
                     slot.children.clear();
@@ -445,6 +450,13 @@ public class RadialConfigScreen {
         // Draw outer/inner bounds
         if (detectionInner < visibleInner) {
             drawAnnulus(graphics, cx, cy, detectionInner, visibleInner);
+        }
+
+        // When "Draw Menu Background" is off, the renderer never draws the visible ring, so
+        // there'd otherwise be no indication of the true activation area (e.g. with both
+        // detection boundaries at 0). Show it here instead.
+        if (!config.showActivationZone) {
+            drawAnnulus(graphics, cx, cy, visibleInner, visibleOuter);
         }
 
         if (detectionOuter > visibleOuter) {

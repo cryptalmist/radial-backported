@@ -5,6 +5,7 @@ import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 
 public interface IconTab {
@@ -21,4 +22,14 @@ public interface IconTab {
     void updateSearch(String query);
 
     boolean showSearchBar();
+
+    // Whether this tab offers the given icon id, so the picker can open on the tab holding the current icon
+    default boolean accepts(String iconId) {
+        return false;
+    }
+
+    // Lets the tab handle keyboard navigation before the screen's own focus handling
+    default boolean keyPressed(KeyInput event) {
+        return false;
+    }
 }

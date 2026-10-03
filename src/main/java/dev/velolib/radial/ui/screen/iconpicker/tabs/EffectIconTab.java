@@ -1,21 +1,32 @@
 package dev.velolib.radial.ui.screen.iconpicker.tabs;
 
+import dev.velolib.radial.render.SlotRenderHelper;
 import dev.velolib.radial.ui.screen.iconpicker.GridIconTab;
+import dev.velolib.radial.ui.screen.iconpicker.IconSearch;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class EffectIconTab extends GridIconTab<StatusEffect> {
+public class EffectIconTab extends GridIconTab<EffectIconTab.EffectEntry> {
 
-    public EffectIconTab(Consumer<String> onSelect, Runnable onClose) {
-        super(onSelect, onClose);
+    // Built per picker so the translated names follow the current language
+    private final List<EffectEntry> effects = Registries.STATUS_EFFECT.stream()
+            .map(effect -> {
+                Identifier id = Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effect));
+                Text name = Text.translatable(effect.getTranslationKey());
+                String lowerName = name.getString().toLowerCase();
+
+                return new EffectEntry(id, name, lowerName, lowerName + " " + id);
+            })
+            .toList();
+
+    public EffectIconTab(String currentId, Consumer<String> onSelect, Runnable onClose) {
+        super(currentId, onSelect, onClose);
     }
 
     @Override
@@ -24,50 +35,34 @@ public class EffectIconTab extends GridIconTab<StatusEffect> {
     }
 
     @Override
-    protected int getSlotSize() {
-        return 20;
+    public boolean accepts(String iconId) {
+        return iconId.startsWith(SlotRenderHelper.EFFECT_PREFIX);
     }
 
     @Override
-    protected List<StatusEffect> search(String query) {
-        return Registries.STATUS_EFFECT.stream()
-                .filter(effect -> {
-                    String name = Text.translatable(effect.getTranslationKey())
-                            .getString()
-                            .toLowerCase();
-                    String id = Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effect))
-                            .toString()
-                            .toLowerCase();
-                    return name.contains(query) || id.contains(query);
-                })
-                .toList();
+    protected List<EffectEntry> search(String query) {
+        return IconSearch.rank(effects, query, EffectEntry::lowerName, EffectEntry::searchText);
     }
 
     @Override
     protected void renderIcon(
-            DrawContext graphics, int x, int y, int mouseX, int mouseY, StatusEffect effect, boolean hovered) {
-        String path =
-                Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effect)).getPath();
-        Identifier spriteId = Identifier.of("minecraft", "mob_effect/" + path);
-
-        graphics.drawGuiTexture(RenderPipelines.GUI_TEXTURED, spriteId, x, y, getSlotSize(), getSlotSize());
+            DrawContext graphics, int x, int y, int mouseX, int mouseY, EffectEntry effect, boolean hovered) {
+        SlotRenderHelper.renderIcon(graphics, getIconId(effect), x, y, getSlotSize(), 0xFFFFFFFF, () -> null);
 
         if (hovered) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            graphics.drawTooltip(client.textRenderer, Text.translatable(effect.getTranslationKey()), mouseX, mouseY);
+            graphics.drawTooltip(MinecraftClient.getInstance().textRenderer, effect.name(), mouseX, mouseY);
         }
     }
 
     @Override
-    protected void selectIcon(StatusEffect effect) {
-        String effectId =
-                Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effect)).toString();
-        onSelect.accept("radial:effect." + effectId);
-        onClose.run();
+    protected String getIconId(EffectEntry effect) {
+        return SlotRenderHelper.EFFECT_PREFIX + effect.id();
     }
 
     @Override
-    protected Text getItemNarration(StatusEffect effect) {
-        return Text.translatable(effect.getTranslationKey());
+    protected Text getItemNarration(EffectEntry effect) {
+        return effect.name();
     }
+
+    public record EffectEntry(Identifier id, Text name, String lowerName, String searchText) {}
 }

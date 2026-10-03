@@ -1,6 +1,7 @@
 package dev.velolib.radial.ui.screen.iconpicker;
 
 import dev.velolib.radial.ui.screen.iconpicker.tabs.*;
+import dev.velolib.radial.util.IconHistory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -10,6 +11,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 
 public class IconPickerScreen extends Screen {
@@ -19,18 +21,45 @@ public class IconPickerScreen extends Screen {
 
     private IconTab currentTab;
 
-    public IconPickerScreen(Screen parent, Consumer<String> onSelect) {
-        super(Text.literal("Icon Selector"));
+    private TextFieldWidget searchField;
+
+    /**
+     * @param currentId the slot's current icon id, used to open on its tab and highlight it; may be null
+     */
+    public IconPickerScreen(Screen parent, String currentId, Consumer<String> onSelect) {
+        super(Text.translatable("screen.radial.icon_picker.title"));
         this.parent = parent;
 
-        // Register Tabs
-        tabs.add(new ItemIconTab(onSelect, this::close));
-        tabs.add(new InventoryIconTab(onSelect, this::close));
-        tabs.add(new EffectIconTab(onSelect, this::close));
-        tabs.add(new PhosphorIconTab(onSelect, this::close));
-        tabs.add(new GlyphIconTab(onSelect, this::close));
+        Consumer<String> recordingSelect = id -> {
+            IconHistory.recordUse(id);
+            onSelect.accept(id);
+        };
 
-        this.currentTab = tabs.getFirst();
+        // Register Tabs
+        RecentIconTab recentTab = new RecentIconTab(currentId, recordingSelect, this::close);
+        ItemIconTab itemTab = new ItemIconTab(currentId, recordingSelect, this::close);
+        tabs.add(recentTab);
+        tabs.add(itemTab);
+        tabs.add(new InventoryIconTab(currentId, recordingSelect, this::close));
+        tabs.add(new EffectIconTab(currentId, recordingSelect, this::close));
+        tabs.add(new PhosphorIconTab(currentId, recordingSelect, this::close));
+        tabs.add(new GlyphIconTab(currentId, recordingSelect, this::close));
+
+        this.currentTab = getInitialTab(currentId, recentTab, itemTab);
+    }
+
+    private IconTab getInitialTab(String currentId, IconTab recentTab, IconTab itemTab) {
+        boolean hasIcon = currentId != null && !currentId.isBlank() && !currentId.equals("minecraft:air");
+
+        if (hasIcon) {
+            for (IconTab tab : tabs) {
+                if (tab.accepts(currentId)) {
+                    return tab;
+                }
+            }
+        }
+
+        return RecentIconTab.hasEntries() ? recentTab : itemTab;
     }
 
     @Override
@@ -52,13 +81,14 @@ public class IconPickerScreen extends Screen {
         }
 
         int listWidth = Math.min(350, (int) (width * 0.9));
-        TextFieldWidget searchField = new TextFieldWidget(
+        searchField = new TextFieldWidget(
                 textRenderer,
                 width / 2 - listWidth / 2,
                 35,
                 listWidth,
                 20,
                 Text.translatable("screen.radial.editor.search"));
+        searchField.setPlaceholder(Text.translatable("screen.radial.editor.search"));
         searchField.setChangedListener(query -> {
             if (currentTab != null) currentTab.updateSearch(query);
         });
@@ -74,8 +104,9 @@ public class IconPickerScreen extends Screen {
             }
         });
 
+        // The field is recreated on every init, so the query already starts empty; calling setText here would
+        // re-run the search and throw away the tab's scroll to the current icon
         searchField.visible = currentTab.showSearchBar();
-        searchField.setText("");
         setInitialFocus(searchField);
     }
 
@@ -95,11 +126,36 @@ public class IconPickerScreen extends Screen {
     }
 
     @Override
+    public boolean keyPressed(KeyInput event) {
+        // Ctrl+Tab / Ctrl+Shift+Tab cycle through the tabs
+        if (event.isTab() && event.hasCtrl()) {
+            int step = event.hasShift() ? -1 : 1;
+            setTab(tabs.get(Math.floorMod(tabs.indexOf(currentTab) + step, tabs.size())));
+            return true;
+        }
+
+        // The tab gets first pick so arrows and Enter drive the icon grid even while typing a search
+        if (currentTab.keyPressed(event)) {
+            return true;
+        }
+
+        return super.keyPressed(event);
+    }
+
+    @Override
     public boolean mouseClicked(Click click, boolean doubled) {
         if (currentTab.mouseClicked(click, doubled)) {
             return true;
         }
-        return super.mouseClicked(click, doubled);
+
+        boolean handled = super.mouseClicked(click, doubled);
+
+        // Right-clicking to favorite focuses the icon list; hand focus back so typing keeps searching
+        if (click.button() == 1 && searchField != null && searchField.visible) {
+            setFocused(searchField);
+        }
+
+        return handled;
     }
 
     @Override

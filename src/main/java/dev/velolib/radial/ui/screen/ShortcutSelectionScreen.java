@@ -27,7 +27,7 @@ public class ShortcutSelectionScreen extends Screen {
 
     public ShortcutSelectionScreen(Screen parent, Consumer<Identifier> onSelect) {
 
-        super(Text.literal("Select Shortcut"));
+        super(Text.translatable("screen.radial.shortcut_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
