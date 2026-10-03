@@ -33,12 +33,12 @@ public class RadialClient implements ClientModInitializer {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
 
     public static final KeyMapping OPEN_RADIAL = KeyMappingHelper.registerKeyMapping(
-            new KeyMapping("key." + MOD_ID + ".open", InputConstants.Type.KEYBOARD, InputConstants.KEY_R, CATEGORY, 0));
+            new KeyMapping("key." + MOD_ID + ".open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, CATEGORY, 0));
     public static final KeyMapping BACK_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key." + MOD_ID + ".back", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY, 1));
+            "key." + MOD_ID + ".back", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY, 1));
     public static final KeyMapping STOP_MACROS = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key." + MOD_ID + ".stop_macros",
-            InputConstants.Type.KEYBOARD,
+            InputConstants.Type.KEYSYM,
             InputConstants.UNKNOWN.getValue(),
             CATEGORY,
             2));
@@ -48,7 +48,7 @@ public class RadialClient implements ClientModInitializer {
         for (int i = 0; i < 12; i++) {
             SLOT_KEYS[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                     "key." + MOD_ID + ".slot." + (i + 1),
-                    InputConstants.Type.KEYBOARD,
+                    InputConstants.Type.KEYSYM,
                     InputConstants.UNKNOWN.getValue(),
                     CATEGORY,
                     12 + i));
@@ -150,13 +150,17 @@ public class RadialClient implements ClientModInitializer {
         int code = key.getValue();
         if (code == InputConstants.UNKNOWN.getValue()) return false;
 
-        return switch (key.getType()) {
-            case MOUSE ->
-                GLFW.glfwGetMouseButton(
-                                Minecraft.getInstance().getWindow().handle(), code)
-                        == GLFW.GLFW_PRESS;
-            case KEYBOARD -> InputConstants.isKeyDown(code);
-        };
+        Minecraft client = Minecraft.getInstance();
+        if (client.getWindow() == null) return false;
+        long handle = client.getWindow().handle();
+
+        if (key.getType() == InputConstants.Type.MOUSE) {
+            return GLFW.glfwGetMouseButton(handle, code) == GLFW.GLFW_PRESS;
+        } else {
+            // KEYSYM / SCANCODE - 26.1.2 uses GLFW backend (SDL arrived in 26.3)
+            if (code < 0) return false;
+            return GLFW.glfwGetKey(handle, code) == GLFW.GLFW_PRESS;
+        }
     }
 
     @Override
@@ -196,7 +200,7 @@ public class RadialClient implements ClientModInitializer {
             while (STOP_MACROS.consumeClick()) {
                 int stopped = MacroExecutor.cancelAll();
                 clearQueuedKeyPresses();
-                client.gui.hud.setOverlayMessage(Component.translatable("radial.macro.stopped", stopped), false);
+                client.gui.setOverlayMessage(Component.translatable("radial.macro.stopped", stopped), false);
             }
 
             if (!keyPressQueue.isEmpty()) {

@@ -33,7 +33,6 @@ public class ShortcutSlotMode extends IconEnabledSlotMode {
     @Override
     public void openValuePicker(Screen parent, Consumer<String> onSelect) {
         Minecraft.getInstance()
-                .gui
                 .setScreen(new ShortcutSelectionScreen(parent, (Identifier id) -> onSelect.accept(id.toString())));
     }
 

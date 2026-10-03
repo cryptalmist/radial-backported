@@ -176,13 +176,13 @@ public class SlotEditorScreen extends Screen {
             String json = RadialConfig.GSON.toJson(this.slot);
             this.minecraft.keyboardHandler.setClipboard(json);
             SystemToast.add(
-                    this.minecraft.gui.toastManager(),
+                    this.minecraft.getToastManager(),
                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                     Component.translatable("screen.radial.editor.toast.copied"),
                     Component.translatable("screen.radial.editor.toast.copied.desc"));
         } catch (Exception e) {
             SystemToast.add(
-                    this.minecraft.gui.toastManager(),
+                    this.minecraft.getToastManager(),
                     SystemToast.SystemToastId.PACK_COPY_FAILURE,
                     Component.translatable("screen.radial.editor.toast.copy_failed"),
                     Component.literal(
@@ -224,13 +224,13 @@ public class SlotEditorScreen extends Screen {
             this.rebuildWidgets();
 
             SystemToast.add(
-                    this.minecraft.gui.toastManager(),
+                    this.minecraft.getToastManager(),
                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                     Component.translatable("screen.radial.editor.toast.pasted"),
                     Component.translatable("screen.radial.editor.toast.pasted.desc"));
         } catch (Exception e) {
             SystemToast.add(
-                    this.minecraft.gui.toastManager(),
+                    this.minecraft.getToastManager(),
                     SystemToast.SystemToastId.PACK_COPY_FAILURE,
                     Component.translatable("screen.radial.editor.toast.paste_failed"),
                     Component.literal(

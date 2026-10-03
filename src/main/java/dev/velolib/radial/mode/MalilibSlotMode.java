@@ -31,7 +31,6 @@ public class MalilibSlotMode extends IconEnabledSlotMode {
     @Override
     public void openValuePicker(Screen parent, Consumer<String> onSelect) {
         Minecraft.getInstance()
-                .gui
                 .setScreen(new MalilibSelectionScreen(parent, action -> onSelect.accept(action.id())));
     }
 

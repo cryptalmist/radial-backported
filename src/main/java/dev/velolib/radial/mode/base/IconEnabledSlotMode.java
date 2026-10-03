@@ -113,7 +113,6 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         // Browse Button (setValue runs the responder, which updates the slot)
         Button browseIconButton = Button.builder(
                         Component.translatable("screen.radial.editor.browse"), _ -> Minecraft.getInstance()
-                                .gui
                                 .setScreen(new IconPickerScreen(screen, slot.itemId, iconField::setValue)))
                 .bounds(0, 0, BUTTON_WIDTH, ROW_HEIGHT)
                 .build();
