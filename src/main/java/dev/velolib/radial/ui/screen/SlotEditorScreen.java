@@ -13,7 +13,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
@@ -236,16 +235,14 @@ public class SlotEditorScreen extends Screen {
     }
 
     private void showToast(Component title, Component desc, boolean error) {
+        // 1.21.1 backport: SystemToast.add(ToastManager,...) API differs from 26.x;
+        // use the action-bar overlay for copy/paste feedback instead.
         try {
-            SystemToast.add(
-                    this.minecraft.getToastManager(),
-                    error
-                            ? SystemToast.SystemToastId.PACK_COPY_FAILURE
-                            : SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                    title,
-                    desc);
+            if (this.minecraft != null && this.minecraft.gui != null) {
+                this.minecraft.gui.setOverlayMessage(error ? desc : title, false);
+            }
         } catch (Exception e) {
-            // Toasts are best-effort; clipboard action already succeeded/failed
+            // Feedback is best-effort; clipboard action already succeeded/failed
         }
     }
 
