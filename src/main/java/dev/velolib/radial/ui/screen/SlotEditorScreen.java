@@ -7,21 +7,20 @@ import dev.velolib.radial.config.RadialConfig;
 import dev.velolib.radial.render.SlotRenderHelper;
 import dev.velolib.radial.ui.widget.DropdownButtonWidget;
 import dev.velolib.radial.ui.widget.DropdownMenuWidget;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 public class SlotEditorScreen extends Screen {
 
-    private static final ResourceLocation SLOT_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "gamemode_switcher/slot");
     private static final int SLOT_SIZE = 26;
 
     // LAYOUT CONSTANTS
@@ -29,12 +28,13 @@ public class SlotEditorScreen extends Screen {
     private static final int HORIZ_GAP = 5;
 
     private final RadialSlot slot;
-    private final boolean isRoot;
 
     // State for reverting changes on cancel
-    private final String oldName, oldValue, oldId;
+    private final String oldName, oldValue, oldId, oldIconColor;
     private final SlotMode oldMode;
     private final int oldChildCount;
+    private final List<RadialSlot> oldChildren;
+    private final List<RadialSlot.Macro> oldMacros;
 
     private boolean isSaved = false;
 
@@ -42,16 +42,18 @@ public class SlotEditorScreen extends Screen {
     private EditBox nameField;
     private DropdownButtonWidget<SlotMode> modeDropdown;
 
-    public SlotEditorScreen(RadialSlot slot, boolean isRoot) {
+    public SlotEditorScreen(RadialSlot slot) {
         super(Component.translatable("screen.radial.editor.title"));
         this.slot = slot;
-        this.isRoot = isRoot;
 
         this.oldName = slot.name;
         this.oldValue = slot.value;
         this.oldId = slot.itemId;
+        this.oldIconColor = slot.iconColor;
         this.oldMode = slot.mode;
         this.oldChildCount = slot.childSlotCount;
+        this.oldChildren = slot.children != null ? new ArrayList<>(slot.children) : null;
+        this.oldMacros = slot.macros != null ? new ArrayList<>(slot.macros) : null;
     }
 
     @Override
@@ -80,12 +82,8 @@ public class SlotEditorScreen extends Screen {
         modeGroup.addChild(modeLabel);
 
         List<SlotMode> availableModes = SlotModeRegistry.getRegisteredModes().values().stream()
-                .filter(mode -> mode.isAvailable()
-                        && (isRoot
-                                || !mode.getTranslatedName()
-                                        .getString()
-                                        .toLowerCase()
-                                        .contains("submenu")))
+                .filter(SlotMode::isAvailable)
+                .filter(mode -> !mode.isMacroOnly())
                 .toList();
 
         modeDropdown =
@@ -115,7 +113,6 @@ public class SlotEditorScreen extends Screen {
         mainLayout.addChild(modeGroup);
 
         // --- ROW 3: Dynamic Container ---
-        // Also reduced to 8 to match main vertical gaps
         LinearLayout dynamicLayoutContainer = LinearLayout.vertical().spacing(8);
         slot.mode.buildEditorWidgets(this, slot, contentWidth, dynamicLayoutContainer);
         mainLayout.addChild(dynamicLayoutContainer);
@@ -140,6 +137,28 @@ public class SlotEditorScreen extends Screen {
 
         mainLayout.addChild(actionGroup);
 
+        // --- ROW 5: Slot Management ---
+        LinearLayout managementGroup = LinearLayout.horizontal().spacing(HORIZ_GAP);
+        int mgmtBtnWidth = (contentWidth - HORIZ_GAP * 2) / 3;
+
+        Button copyBtn = Button.builder(Component.translatable("screen.radial.editor.copy"), btn -> copyToClipboard())
+                .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
+                .build();
+        managementGroup.addChild(copyBtn);
+
+        Button pasteBtn = Button.builder(
+                        Component.translatable("screen.radial.editor.paste"), btn -> pasteFromClipboard())
+                .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
+                .build();
+        managementGroup.addChild(pasteBtn);
+
+        Button resetBtn = Button.builder(Component.translatable("screen.radial.editor.reset"), btn -> resetSlot())
+                .bounds(0, 0, mgmtBtnWidth, ROW_HEIGHT)
+                .build();
+        managementGroup.addChild(resetBtn);
+
+        mainLayout.addChild(managementGroup);
+
         // --- FINAL ASSEMBLY ---
         FrameLayout rootLayout = new FrameLayout();
         rootLayout.addChild(mainLayout);
@@ -148,6 +167,100 @@ public class SlotEditorScreen extends Screen {
         // Offset the Y position down by 20 to ensure room at the top of the screen for the icon
         FrameLayout.centerInRectangle(rootLayout, 0, 20, width, height);
         rootLayout.visitWidgets(this::addRenderableWidget);
+    }
+
+    private void copyToClipboard() {
+        try {
+            String json = RadialConfig.GSON.toJson(this.slot);
+            this.minecraft.keyboardHandler.setClipboard(json);
+            showToast(
+                    Component.translatable("screen.radial.editor.toast.copied"),
+                    Component.translatable("screen.radial.editor.toast.copied.desc"),
+                    false);
+        } catch (Exception e) {
+            showToast(
+                    Component.translatable("screen.radial.editor.toast.copy_failed"),
+                    Component.literal(
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : Component.translatable("screen.radial.editor.error.unknown")
+                                            .getString()),
+                    true);
+        }
+    }
+
+    private void pasteFromClipboard() {
+        try {
+            String json = this.minecraft.keyboardHandler.getClipboard();
+            if (json == null || json.trim().isEmpty()) {
+                throw new IllegalArgumentException(Component.translatable("screen.radial.editor.error.empty_clipboard")
+                        .getString());
+            }
+
+            RadialSlot pasted = RadialConfig.GSON.fromJson(json, RadialSlot.class);
+            if (pasted == null) {
+                throw new IllegalArgumentException(Component.translatable("screen.radial.editor.error.invalid_json")
+                        .getString());
+            }
+
+            pasted.sanitize();
+
+            // Apply directly onto current slot reference
+            this.slot.name = pasted.name;
+            this.slot.mode = pasted.mode;
+            this.slot.value = pasted.value;
+            this.slot.itemId = pasted.itemId;
+            this.slot.iconColor = pasted.iconColor;
+            this.slot.childSlotCount = pasted.childSlotCount;
+            this.slot.children = pasted.children;
+            this.slot.macros = pasted.macros;
+            this.slot.clearCache();
+
+            // Screen native rebuild function refreshes UI with new values
+            this.rebuildWidgets();
+
+            showToast(
+                    Component.translatable("screen.radial.editor.toast.pasted"),
+                    Component.translatable("screen.radial.editor.toast.pasted.desc"),
+                    false);
+        } catch (Exception e) {
+            showToast(
+                    Component.translatable("screen.radial.editor.toast.paste_failed"),
+                    Component.literal(
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : Component.translatable("screen.radial.editor.error.unknown")
+                                            .getString()),
+                    true);
+        }
+    }
+
+    private void showToast(Component title, Component desc, boolean error) {
+        try {
+            SystemToast.add(
+                    this.minecraft.getToastManager(),
+                    error
+                            ? SystemToast.SystemToastId.PACK_COPY_FAILURE
+                            : SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                    title,
+                    desc);
+        } catch (Exception e) {
+            // Toasts are best-effort; clipboard action already succeeded/failed
+        }
+    }
+
+    private void resetSlot() {
+        this.slot.name = "";
+        this.slot.mode = SlotModeRegistry.getDefaultMode();
+        this.slot.value = "";
+        this.slot.itemId = "minecraft:air";
+        this.slot.iconColor = null;
+        this.slot.childSlotCount = 8;
+        this.slot.children = null;
+        this.slot.macros = null;
+        this.slot.clearCache();
+
+        this.rebuildWidgets();
     }
 
     @Override
@@ -162,9 +275,9 @@ public class SlotEditorScreen extends Screen {
         int iconY = (nameField != null) ? nameField.getY() - SLOT_SIZE - 20 : height / 2 - 110;
 
         // Draw background slot
-        graphics.blitSprite(SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
+        graphics.blitSprite(SlotRenderHelper.SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
 
-        SlotRenderHelper.renderSlotIcon(graphics, slot, centerX - 13, iconY);
+        SlotRenderHelper.renderSlotIcon(graphics, slot, centerX - 13, iconY, 255);
 
         // --- THE MOUSE SPOOFING TRICK ---
         boolean hoveringMenu = this.modeDropdown != null
@@ -187,8 +300,22 @@ public class SlotEditorScreen extends Screen {
             slot.name = oldName;
             slot.value = oldValue;
             slot.itemId = oldId;
+            slot.iconColor = oldIconColor;
             slot.mode = oldMode;
             slot.childSlotCount = oldChildCount;
+
+            if (oldChildren != null) {
+                slot.children = new ArrayList<>(oldChildren);
+            } else {
+                slot.children = null;
+            }
+
+            if (oldMacros != null) {
+                slot.macros = new ArrayList<>(oldMacros);
+            } else {
+                slot.macros = null;
+            }
+
             slot.clearCache();
         }
 
@@ -203,8 +330,7 @@ public class SlotEditorScreen extends Screen {
             if (floatingMenu.isMouseOver(mouseX, mouseY)) {
                 floatingMenu.mouseClicked(mouseX, mouseY, button);
                 return true;
-            } else //noinspection StatementWithEmptyBody
-            if (this.modeDropdown.isMouseOver(mouseX, mouseY)) {
+            } else if (this.modeDropdown.isMouseOver(mouseX, mouseY)) {
                 // Let the click fall through so the button can close itself
             } else {
                 this.modeDropdown.closeMenu();
@@ -212,6 +338,20 @@ public class SlotEditorScreen extends Screen {
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // The floating menu overlaps other widgets, which would otherwise receive the scroll first
+        if (this.modeDropdown != null && this.modeDropdown.isMenuOpen()) {
+            DropdownMenuWidget<SlotMode> floatingMenu = this.modeDropdown.getActiveMenu();
+
+            if (floatingMenu.isMouseOver(mouseX, mouseY)) {
+                return floatingMenu.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+            }
+        }
+
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

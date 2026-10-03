@@ -27,11 +27,13 @@ public class SlotModeRegistry {
         initialized = true;
 
         register(EMPTY_ID, new EmptySlotMode());
+        register(ResourceLocation.fromNamespaceAndPath("radial", "delay"), new DelaySlotMode());
         register(ResourceLocation.fromNamespaceAndPath("radial", "chat"), new ChatSlotMode());
         register(ResourceLocation.fromNamespaceAndPath("radial", "keybind"), new KeybindSlotMode());
         register(ResourceLocation.fromNamespaceAndPath("radial", "shortcut"), new ShortcutSlotMode());
         register(ResourceLocation.fromNamespaceAndPath("radial", "malilib"), new MalilibSlotMode());
         register(ResourceLocation.fromNamespaceAndPath("radial", "submenu"), new SubmenuSlotMode());
+        register(ResourceLocation.fromNamespaceAndPath("radial", "macro"), new MacroSlotMode());
 
         // Third-party addons can contribute modes via Java's ServiceLoader
         // (META-INF/services/dev.velolib.radial.api.RadialApiEntrypoint).

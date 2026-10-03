@@ -5,27 +5,24 @@ import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.api.utils.Dimension;
 import dev.isxander.yacl3.gui.AbstractWidget;
 import dev.isxander.yacl3.gui.YACLScreen;
+import dev.velolib.radial.api.RadialSlot;
+import dev.velolib.radial.mode.MacroSlotMode;
+import dev.velolib.radial.mode.SubmenuSlotMode;
 import dev.velolib.radial.render.DonutRenderer;
+import dev.velolib.radial.render.SlotRenderHelper;
+import dev.velolib.radial.ui.screen.RadialScreen;
 import java.awt.*;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 public class RadialConfigScreen {
-
-    private static final ResourceLocation SLOT_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "gamemode_switcher/slot");
-
-    private static final ResourceLocation SELECTION_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "gamemode_switcher/selection");
 
     private static final DonutRenderer PREVIEW_RENDERER = new DonutRenderer("preview");
 
     private static final int SLOT_SIZE = 26;
-    private static final float PREVIEW_HOVER_PUSH = 7.5F;
-    private static final float PREVIEW_HOVER_SCALE = 0.1F;
 
     private static boolean showPreview = true;
 
@@ -45,6 +42,15 @@ public class RadialConfigScreen {
                                         Component.translatable("screen.radial.config.show_preview.tooltip")))
                                 .binding(true, () -> showPreview, v -> showPreview = v)
                                 .controller(BooleanControllerBuilder::create)
+                                .build())
+                        .option(ButtonOption.createBuilder()
+                                .name(Component.translatable("screen.radial.config.optimize"))
+                                .description(OptionDescription.of(
+                                        Component.translatable("screen.radial.config.optimize.tooltip")))
+                                .action((screen, opt) -> {
+                                    optimizeSlotTree(config.slots);
+                                    RadialConfig.save();
+                                })
                                 .build())
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.empty())
@@ -199,6 +205,16 @@ public class RadialConfigScreen {
                                                 .range(0.0f, 20.0f)
                                                 .step(0.5f))
                                         .build())
+                                .option(Option.<Boolean>createBuilder()
+                                        .name(Component.translatable("screen.radial.config.enable_background_blur"))
+                                        .description(OptionDescription.of(Component.translatable(
+                                                "screen.radial.config.enable_background_blur.tooltip")))
+                                        .binding(
+                                                false,
+                                                () -> config.enableBackgroundBlur,
+                                                v -> config.enableBackgroundBlur = v)
+                                        .controller(BooleanControllerBuilder::create)
+                                        .build())
                                 .build())
 
                         // BEHAVIOR
@@ -213,7 +229,8 @@ public class RadialConfigScreen {
                                                 () -> config.revealAnimation,
                                                 v -> config.revealAnimation = v)
                                         .controller(opt -> EnumControllerBuilder.create(opt)
-                                                .enumClass(RadialConfig.RevealAnimation.class))
+                                                .enumClass(RadialConfig.RevealAnimation.class)
+                                                .formatValue(RadialConfig.RevealAnimation::getDisplayName))
                                         .build())
                                 .option(Option.<Integer>createBuilder()
                                         .name(Component.translatable("screen.radial.config.reveal_duration_ms"))
@@ -256,7 +273,18 @@ public class RadialConfigScreen {
                                                 () -> config.activationMode,
                                                 v -> config.activationMode = v)
                                         .controller(opt -> EnumControllerBuilder.create(opt)
-                                                .enumClass(RadialConfig.ActivationMode.class))
+                                                .enumClass(RadialConfig.ActivationMode.class)
+                                                .formatValue(RadialConfig.ActivationMode::getDisplayName))
+                                        .build())
+                                .option(Option.<Boolean>createBuilder()
+                                        .name(Component.translatable("screen.radial.config.reset_cursor_on_submenu"))
+                                        .description(OptionDescription.of(Component.translatable(
+                                                "screen.radial.config.reset_cursor_on_submenu.tooltip")))
+                                        .binding(
+                                                false,
+                                                () -> config.resetCursorOnSubmenu,
+                                                v -> config.resetCursorOnSubmenu = v)
+                                        .controller(BooleanControllerBuilder::create)
                                         .build())
                                 .build())
                         .build())
@@ -273,6 +301,25 @@ public class RadialConfigScreen {
                 .save(RadialConfig::save)
                 .build()
                 .generateScreen(parent);
+    }
+
+    private static void optimizeSlotTree(List<RadialSlot> slots) {
+        if (slots == null || slots.isEmpty()) return;
+
+        for (RadialSlot slot : slots) {
+            if (!(slot.mode instanceof MacroSlotMode) && slot.macros != null) {
+                slot.macros.clear();
+            }
+
+            if (!(slot.mode instanceof SubmenuSlotMode)) {
+                if (slot.children != null) {
+                    slot.children.clear();
+                }
+                slot.childSlotCount = 0;
+            } else {
+                optimizeSlotTree(slot.children);
+            }
+        }
     }
 
     private static Controller<Boolean> createPreviewController(Option<Boolean> opt, RadialConfig config) {
@@ -310,26 +357,6 @@ public class RadialConfigScreen {
                 return widget;
             }
         };
-    }
-
-    private static float getVisibleInnerRadius(RadialConfig config) {
-        return Math.max(0.0F, config.slotRadius - config.radialThickness / 2.0F);
-    }
-
-    private static float getVisibleOuterRadius(RadialConfig config) {
-        return config.slotRadius + config.radialThickness / 2.0F;
-    }
-
-    private static float getDetectionInnerRadius(RadialConfig config) {
-        return Math.max(0.0F, getVisibleInnerRadius(config) - config.innerDetectionBoundary);
-    }
-
-    private static float getDetectionOuterRadius(RadialConfig config) {
-        float radius = getVisibleOuterRadius(config);
-        if (config.enableHoverAnimation) {
-            radius += PREVIEW_HOVER_PUSH;
-        }
-        return radius + config.outerDetectionBoundary;
     }
 
     /*
@@ -384,10 +411,10 @@ public class RadialConfigScreen {
         int cx = client.getWindow().getGuiScaledWidth() / 2;
         int cy = client.getWindow().getGuiScaledHeight() / 2;
 
-        float visibleInner = getVisibleInnerRadius(config);
-        float visibleOuter = getVisibleOuterRadius(config);
-        float detectionInner = getDetectionInnerRadius(config);
-        float detectionOuter = getDetectionOuterRadius(config);
+        float visibleInner = config.getVisibleInnerRadius();
+        float visibleOuter = config.getVisibleOuterRadius();
+        float detectionInner = config.getDetectionInnerRadius();
+        float detectionOuter = config.getDetectionOuterRadius();
         int count = config.slotCount;
 
         if (count <= 0) return;
@@ -401,6 +428,13 @@ public class RadialConfigScreen {
             drawAnnulus(graphics, cx, cy, detectionInner, visibleInner);
         }
 
+        // When "Draw Menu Background" is off, the renderer never draws the visible ring, so
+        // there'd otherwise be no indication of the true activation area (e.g. with both
+        // detection boundaries at 0). Show it here instead.
+        if (!config.showActivationZone) {
+            drawAnnulus(graphics, cx, cy, visibleInner, visibleOuter);
+        }
+
         if (detectionOuter > visibleOuter) {
             drawAnnulus(graphics, cx, cy, visibleOuter, detectionOuter);
         }
@@ -408,7 +442,7 @@ public class RadialConfigScreen {
         if (config.showActivationZone) {
             for (int i = 0; i < count; i++) {
                 boolean highlighted = (i == hoveredSlot);
-                float hoverPush = (config.enableHoverAnimation && highlighted) ? PREVIEW_HOVER_PUSH : 0.0F;
+                float hoverPush = (config.enableHoverAnimation && highlighted) ? RadialScreen.SLOT_PUSH : 0.0F;
                 float slotAngle = (float) ((Math.PI * 2.0 / count) * i - Math.PI / 2.0);
 
                 PREVIEW_RENDERER.renderSector(graphics, cx, cy, slotAngle, hoverPush, highlighted, 1.0F, 2.0F);
@@ -417,15 +451,16 @@ public class RadialConfigScreen {
 
         for (int i = 0; i < count; i++) {
             boolean highlighted = (i == hoveredSlot);
-            float hoverPush = (config.enableHoverAnimation && highlighted) ? PREVIEW_HOVER_PUSH : 0.0F;
+            float hoverPush = (config.enableHoverAnimation && highlighted) ? RadialScreen.SLOT_PUSH : 0.0F;
             float slotAngle = (float) ((Math.PI * 2.0 / count) * i - Math.PI / 2.0);
             float slotRadius = config.slotRadius;
             float finalRadius = slotRadius + hoverPush;
             float slotX = (float) (cx + Math.cos(slotAngle) * finalRadius);
             float slotY = (float) (cy + Math.sin(slotAngle) * finalRadius);
 
-            float hoverScale =
-                    config.enableHoverAnimation ? 1.0F + PREVIEW_HOVER_SCALE * (highlighted ? 1.0F : 0.0F) : 1.0F;
+            float hoverScale = config.enableHoverAnimation
+                    ? 1.0F + RadialScreen.SLOT_HOVER_SCALE * (highlighted ? 1.0F : 0.0F)
+                    : 1.0F;
 
             graphics.pose().pushPose();
             graphics.pose().translate(slotX, slotY, 0);
@@ -433,10 +468,10 @@ public class RadialConfigScreen {
 
             int drawOffset = -SLOT_SIZE / 2;
 
-            graphics.blitSprite(SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
+            graphics.blitSprite(SlotRenderHelper.SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
 
             if (highlighted) {
-                graphics.blitSprite(SELECTION_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
+                graphics.blitSprite(SlotRenderHelper.SELECTION_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
             }
 
             graphics.pose().popPose();

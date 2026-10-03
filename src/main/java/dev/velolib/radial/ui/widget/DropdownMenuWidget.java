@@ -46,17 +46,26 @@ public class DropdownMenuWidget<T> extends AbstractWidget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (this.isMouseOver(mouseX, mouseY)) {
-            int maxScroll = getMaxScroll();
-            if (maxScroll > 0) {
-                this.scrollAmount -= scrollY * this.itemHeight;
-                this.scrollAmount = Mth.clamp(this.scrollAmount, 0, maxScroll);
-
-                return true;
-            }
+        /*
+         * Only consume the event when the mouse is actually inside
+         * the dropdown. This prevents the event from being passed
+         * to unrelated widgets.
+         */
+        if (!this.isMouseOver(mouseX, mouseY)) {
+            return false;
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        int maxScroll = getMaxScroll();
+
+        if (maxScroll <= 0) {
+            // Still consume the event because the dropdown is hovered.
+            return true;
+        }
+
+        this.scrollAmount -= scrollY * this.itemHeight;
+        this.scrollAmount = Mth.clamp(this.scrollAmount, 0, maxScroll);
+
+        return true;
     }
 
     @Override

@@ -4,12 +4,12 @@ import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotActionContext;
 import dev.velolib.radial.api.SlotModeRegistry;
 import dev.velolib.radial.mode.base.IconEnabledSlotMode;
-import dev.velolib.radial.ui.screen.SlotEditorScreen;
 import java.util.ArrayList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class SubmenuSlotMode extends IconEnabledSlotMode {
@@ -19,15 +19,18 @@ public class SubmenuSlotMode extends IconEnabledSlotMode {
     }
 
     @Override
+    public boolean isMacroAction() {
+        return false; // Submenus need the radial menu to be open
+    }
+
+    @Override
     public boolean activateOnRelease() {
         return false; // Submenus only open on click, not hover release
     }
 
     @Override
     public void performAction(RadialSlot slot, SlotActionContext context) {
-        if (context.isRoot()) {
-            context.openSubmenu(slot.children, slot.childSlotCount);
-        }
+        context.openSubmenu(slot.children, slot.childSlotCount);
     }
 
     @Override
@@ -36,16 +39,12 @@ public class SubmenuSlotMode extends IconEnabledSlotMode {
 
         while (slot.children.size() < slot.childSlotCount) {
             slot.children.add(new RadialSlot(
-                    "Sub Slot " + (slot.children.size() + 1),
-                    SlotModeRegistry.getRegisteredModes()
-                            .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("radial", "empty")),
-                    "",
-                    "minecraft:stone"));
+                    "Sub Slot " + (slot.children.size() + 1), SlotModeRegistry.getDefaultMode(), "", "minecraft:air"));
         }
     }
 
     @Override
-    public void buildEditorWidgets(SlotEditorScreen screen, RadialSlot slot, int width, LinearLayout container) {
+    public void buildEditorWidgets(Screen screen, RadialSlot slot, int width, LinearLayout container) {
         int ROW_HEIGHT = 20;
 
         LinearLayout subGroup = LinearLayout.vertical().spacing(2);

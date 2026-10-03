@@ -27,7 +27,7 @@ public class KeybindPickerScreen extends Screen {
     private KeybindList keybindList;
 
     public KeybindPickerScreen(Screen parent, Consumer<String> onSelect) {
-        super(Component.literal("Select Keybind"));
+        super(Component.translatable("screen.radial.keybind_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
@@ -180,11 +180,10 @@ public class KeybindPickerScreen extends Screen {
 
             graphics.fill(left, top + 1, right, bottom - 1, hovered ? 0x80FFFFFF : 0x40000000);
 
-            String actionName = Component.translatable(key.getName()).getString();
-
-            String boundKey = key.saveString();
-
-            String display = actionName + " [" + boundKey + "]";
+            Component display = Component.translatable(key.getName())
+                    .append(" [")
+                    .append(key.getTranslatedKeyMessage())
+                    .append("]");
 
             int textY = top + ((bottom - top) - client.font.lineHeight) / 2;
 
