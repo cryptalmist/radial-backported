@@ -107,7 +107,7 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         // Browse Button (setText runs the responder, which updates the slot)
         ButtonWidget browseIconButton = ButtonWidget.builder(
                         Text.translatable("screen.radial.editor.browse"),
-                        unused -> MinecraftClient.getInstance().setScreen(new IconPickerScreen(screen, id -> {
+                        unused -> MinecraftClient.getInstance().setScreen(new IconPickerScreen(screen, slot.itemId, id -> {
                             iconField.setText(id);
                             slot.itemId = id;
                             slot.clearCache();
@@ -176,13 +176,13 @@ public abstract class IconEnabledSlotMode implements SlotMode {
         boolean valid = SlotRenderHelper.isValidIconId(iconId);
         iconField.setEditableColor(valid ? TextFieldWidget.DEFAULT_EDITABLE_COLOR : INVALID_TEXT_COLOR);
         iconField.setTooltip(
-                valid ? null : Tooltip.create(Text.translatable("screen.radial.editor.icon.invalid")));
+                valid ? null : Tooltip.of(Text.translatable("screen.radial.editor.icon.invalid")));
 
         boolean tintable = SlotRenderHelper.isTintable(iconId);
         colorField.active = tintable;
         colorField.setEditable(tintable);
         colorField.setTooltip(
-                tintable ? null : Tooltip.create(Text.translatable("screen.radial.editor.icon_color.disabled")));
+                tintable ? null : Tooltip.of(Text.translatable("screen.radial.editor.icon_color.disabled")));
     }
 
     private static String getHandItemId(ItemStack stack, MinecraftClient client) {

@@ -286,9 +286,9 @@ public abstract class GridIconTab<T> implements IconTab {
                 renderIcon(graphics, x, y, mouseX, mouseY, item, slotHovered);
 
                 if (iconId.equals(currentId)) {
-                    graphics.drawBorder(x, y, SLOT_SIZE, SLOT_SIZE, CURRENT_OUTLINE_COLOR);
+                    drawOutline(graphics, x, y, SLOT_SIZE, SLOT_SIZE, CURRENT_OUTLINE_COLOR);
                 } else if (atCursor) {
-                    graphics.drawBorder(x, y, SLOT_SIZE, SLOT_SIZE, CURSOR_OUTLINE_COLOR);
+                    drawOutline(graphics, x, y, SLOT_SIZE, SLOT_SIZE, CURSOR_OUTLINE_COLOR);
                 }
 
                 if (IconHistory.isFavorite(iconId)) {
@@ -329,6 +329,14 @@ public abstract class GridIconTab<T> implements IconTab {
             return items.isEmpty()
                     ? Text.translatable("screen.radial.editor.icon_picker.empty_row")
                     : getItemNarration(items.getFirst());
+        }
+
+        private static void drawOutline(
+                net.minecraft.client.gui.DrawContext graphics, int x, int y, int w, int h, int color) {
+            graphics.fill(x, y, x + w, y + 1, color);
+            graphics.fill(x, y + h - 1, x + w, y + h, color);
+            graphics.fill(x, y, x + 1, y + h, color);
+            graphics.fill(x + w - 1, y, x + w, y + h, color);
         }
     }
 }

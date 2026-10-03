@@ -127,7 +127,15 @@ public class InventoryIconTab implements IconTab {
             }
 
             if (slot.iconId().equals(currentId)) {
-                graphics.drawBorder(x, y, INV_SLOT_SIZE, INV_SLOT_SIZE, 0xFFFFAA00);
+                int bx = x;
+                int by = y;
+                int bw = INV_SLOT_SIZE;
+                int bh = INV_SLOT_SIZE;
+                int border = 0xFFFFAA00;
+                graphics.fill(bx, by, bx + bw, by + 1, border);
+                graphics.fill(bx, by + bh - 1, bx + bw, by + bh, border);
+                graphics.fill(bx, by, bx + 1, by + bh, border);
+                graphics.fill(bx + bw - 1, by, bx + bw, by + bh, border);
             }
 
             if (isHovered(mouseX, mouseY, x, y)) {
