@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.api.ShortcutEntry;
 import dev.velolib.radial.api.ShortcutRegistry;
 import java.util.List;
@@ -27,8 +28,7 @@ public class ShortcutSelectionScreen extends Screen {
     private ShortcutList shortcutList;
 
     public ShortcutSelectionScreen(Screen parent, Consumer<Identifier> onSelect) {
-
-        super(Component.literal("Select Shortcut"));
+        super(Component.translatable("screen.radial.shortcut_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
@@ -65,13 +65,11 @@ public class ShortcutSelectionScreen extends Screen {
                 new EditBox(font, listLeft, 15, listWidth, 20, Component.translatable("screen.radial.editor.search"));
 
         searchField.setHint(Component.translatable("screen.radial.editor.search"));
-
         searchField.setResponder(this::updateSearch);
 
         addRenderableWidget(searchField);
 
         shortcutList = new ShortcutList(Minecraft.getInstance(), listWidth, listHeight, listTop, ENTRY_HEIGHT);
-
         shortcutList.updateSizeAndPosition(listWidth, listHeight, listLeft, listTop);
 
         addRenderableWidget(shortcutList);
@@ -95,7 +93,6 @@ public class ShortcutSelectionScreen extends Screen {
         List<ShortcutEntryItem> entries = ShortcutRegistry.getRegisteredShortcuts().entrySet().stream()
                 .filter(entry -> {
                     String name = entry.getValue().name().getString().toLowerCase();
-
                     String id = entry.getKey().toString().toLowerCase();
 
                     return name.contains(q) || id.contains(q);
@@ -109,7 +106,6 @@ public class ShortcutSelectionScreen extends Screen {
 
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-
         graphics.fillGradient(0, 0, width, height, 0xC0101010, 0xD0101010);
 
         super.extractRenderState(graphics, mouseX, mouseY, delta);
@@ -123,7 +119,6 @@ public class ShortcutSelectionScreen extends Screen {
     private static class ShortcutList extends ObjectSelectionList<ShortcutEntryItem> {
 
         private ShortcutList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
-
             super(minecraft, width, height, y, itemHeight);
         }
 
@@ -142,7 +137,6 @@ public class ShortcutSelectionScreen extends Screen {
 
         private ShortcutEntryItem(
                 Map.Entry<Identifier, ShortcutEntry> mapEntry, Consumer<Identifier> onSelect, Runnable onClose) {
-
             this.id = mapEntry.getKey();
             this.entry = mapEntry.getValue();
             this.onSelect = onSelect;
@@ -152,7 +146,6 @@ public class ShortcutSelectionScreen extends Screen {
         @Override
         public void extractContent(
                 GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
-
             Minecraft client = Minecraft.getInstance();
 
             int left = getContentX();
@@ -164,12 +157,9 @@ public class ShortcutSelectionScreen extends Screen {
 
             int textY = top + ((bottom - top) - client.font.lineHeight) / 2;
 
-            String displayName = entry.name().getString();
-
-            graphics.text(client.font, displayName, left + 8, textY, 0xFFFFFFFF);
+            graphics.text(client.font, entry.name(), left + 8, textY, 0xFFFFFFFF);
 
             String idString = id.toString();
-
             int idWidth = client.font.width(idString);
 
             graphics.text(client.font, idString, right - idWidth - 8, textY, 0xFFAAAAAA);
@@ -177,8 +167,7 @@ public class ShortcutSelectionScreen extends Screen {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-
-            if (event.button() != 0) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
                 return false;
             }
 

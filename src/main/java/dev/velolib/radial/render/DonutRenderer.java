@@ -1,6 +1,7 @@
 package dev.velolib.radial.render;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.config.RadialConfig;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
@@ -62,6 +63,8 @@ public class DonutRenderer implements AutoCloseable {
     private int lastBorderColor = -1;
     private int lastHighlightBorderColor = -1;
 
+    // Size of the currently registered textures. Only touched on the main thread, since a newer
+    // generation may already be running at a different size.
     private int texSize = 0;
 
     public DonutRenderer(String idSuffix) {
@@ -110,8 +113,7 @@ public class DonutRenderer implements AutoCloseable {
             return;
         }
 
-        texSize = requiredTexSize;
-        regenerateTextures(count, inner, outer, resScale, config);
+        regenerateTextures(requiredTexSize, count, inner, outer, resScale, config);
 
         lastCount = count;
         lastInner = inner;
@@ -196,9 +198,9 @@ public class DonutRenderer implements AutoCloseable {
      * gracefully discard their results. GPU texture registration is safely delegated back
      * to the main Minecraft thread.
      */
-    private void regenerateTextures(int count, float inner, float outer, float resScale, RadialConfig config) {
+    private void regenerateTextures(
+            int targetTexSize, int count, float inner, float outer, float resScale, RadialConfig config) {
         final long currentGenId = ++this.generationId;
-        final int targetTexSize = this.texSize;
 
         final int bgColor = config.backgroundColor.getRGB();
         final int borderColor = config.borderColor.getRGB();
@@ -211,23 +213,33 @@ public class DonutRenderer implements AutoCloseable {
 
         CompletableFuture.supplyAsync(() -> {
                     NativeImage baseImage = new NativeImage(targetTexSize, targetTexSize, false);
-                    NativeImage hotImage = new NativeImage(targetTexSize, targetTexSize, false);
+                    NativeImage hotImage = null;
 
-                    generatePixels(
-                            baseImage,
-                            hotImage,
-                            count,
-                            inner,
-                            outer,
-                            resScale,
-                            bgColor,
-                            borderColor,
-                            hotColor,
-                            hotBorderColor,
-                            drawSectorBorders,
-                            drawOuterBorders,
-                            sectorBorderWidth,
-                            sectorGap);
+                    try {
+                        hotImage = new NativeImage(targetTexSize, targetTexSize, false);
+
+                        generatePixels(
+                                baseImage,
+                                hotImage,
+                                targetTexSize,
+                                count,
+                                inner,
+                                outer,
+                                resScale,
+                                bgColor,
+                                borderColor,
+                                hotColor,
+                                hotBorderColor,
+                                drawSectorBorders,
+                                drawOuterBorders,
+                                sectorBorderWidth,
+                                sectorGap);
+                    } catch (RuntimeException e) {
+                        // Free the native memory before reporting the failure
+                        baseImage.close();
+                        if (hotImage != null) hotImage.close();
+                        throw e;
+                    }
 
                     return new NativeImage[] {baseImage, hotImage};
                 })
@@ -243,16 +255,21 @@ public class DonutRenderer implements AutoCloseable {
                             if (this.baseTexture != null) this.baseTexture.close();
                             if (this.hotTexture != null) this.hotTexture.close();
 
-                            this.baseTexture = new DynamicTexture(() -> "", images[0]);
-                            this.hotTexture = new DynamicTexture(() -> "", images[1]);
-
+                            this.texSize = targetTexSize;
                             this.baseTexId = Identifier.fromNamespaceAndPath("radial", "sector_base_" + this.idSuffix);
                             this.hotTexId = Identifier.fromNamespaceAndPath("radial", "sector_hot_" + this.idSuffix);
+
+                            this.baseTexture = new DynamicTexture(this.baseTexId::toString, images[0]);
+                            this.hotTexture = new DynamicTexture(this.hotTexId::toString, images[1]);
 
                             Minecraft.getInstance().getTextureManager().register(this.baseTexId, this.baseTexture);
                             Minecraft.getInstance().getTextureManager().register(this.hotTexId, this.hotTexture);
                         },
-                        Minecraft.getInstance());
+                        Minecraft.getInstance())
+                .exceptionally(e -> {
+                    RadialClient.LOGGER.error("Failed to generate radial sector textures", e);
+                    return null;
+                });
     }
 
     /**
@@ -269,6 +286,7 @@ public class DonutRenderer implements AutoCloseable {
     private void generatePixels(
             NativeImage baseImage,
             NativeImage hotImage,
+            int texSize,
             int count,
             float inner,
             float outer,

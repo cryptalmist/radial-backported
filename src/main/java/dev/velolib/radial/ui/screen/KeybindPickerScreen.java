@@ -1,5 +1,7 @@
 package dev.velolib.radial.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import dev.velolib.radial.RadialClient;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -25,7 +27,7 @@ public class KeybindPickerScreen extends Screen {
     private KeybindList keybindList;
 
     public KeybindPickerScreen(Screen parent, Consumer<String> onSelect) {
-        super(Component.literal("Select Keybind"));
+        super(Component.translatable("screen.radial.keybind_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
@@ -91,13 +93,12 @@ public class KeybindPickerScreen extends Screen {
         List<KeybindEntry> entries = Arrays.stream(minecraft.options.keyMappings)
                 .filter(key -> {
                     // BLACKLIST CHECK: Skip our internal radial keys
-                    if (dev.velolib.radial.RadialClient.isRadialInternalKey(key)) {
+                    if (RadialClient.isRadialInternalKey(key)) {
                         return false;
                     }
 
                     String actionName =
                             Component.translatable(key.getName()).getString().toLowerCase();
-
                     String category = key.getCategory().label().getString().toLowerCase();
 
                     return actionName.contains(q) || category.contains(q);
@@ -111,7 +112,6 @@ public class KeybindPickerScreen extends Screen {
 
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-
         graphics.fillGradient(0, 0, width, height, 0xC0101010, 0xD0101010);
 
         super.extractRenderState(graphics, mouseX, mouseY, delta);
@@ -125,7 +125,6 @@ public class KeybindPickerScreen extends Screen {
     private static class KeybindList extends ObjectSelectionList<KeybindEntry> {
 
         private KeybindList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
-
             super(minecraft, width, height, y, itemHeight);
         }
 
@@ -142,7 +141,6 @@ public class KeybindPickerScreen extends Screen {
         private final Runnable onClose;
 
         private KeybindEntry(KeyMapping key, Consumer<String> onSelect, Runnable onClose) {
-
             this.key = key;
             this.onSelect = onSelect;
             this.onClose = onClose;
@@ -151,7 +149,6 @@ public class KeybindPickerScreen extends Screen {
         @Override
         public void extractContent(
                 GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
-
             Minecraft client = Minecraft.getInstance();
 
             int left = getContentX();
@@ -161,18 +158,15 @@ public class KeybindPickerScreen extends Screen {
 
             graphics.fill(left, top + 1, right, bottom - 1, hovered ? 0x80FFFFFF : 0x40000000);
 
-            String actionName = Component.translatable(key.getName()).getString();
-
-            String boundKey = key.saveString();
-
-            String display = actionName + " [" + boundKey + "]";
-
+            Component display = Component.translatable(key.getName())
+                    .append(" [")
+                    .append(key.getTranslatedKeyMessage())
+                    .append("]");
             int textY = top + ((bottom - top) - client.font.lineHeight) / 2;
 
             graphics.text(client.font, display, left + 8, textY, 0xFFFFFFFF);
 
             Component category = key.getCategory().label();
-
             int categoryWidth = client.font.width(category);
 
             graphics.text(client.font, category, right - categoryWidth - 8, textY, 0xFFAAAAAA);
@@ -180,8 +174,7 @@ public class KeybindPickerScreen extends Screen {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-
-            if (event.button() != 0) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
                 return false;
             }
 

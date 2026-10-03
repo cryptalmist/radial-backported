@@ -1,5 +1,6 @@
 package dev.velolib.radial.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.velolib.radial.integration.MalilibIntegration;
 import dev.velolib.radial.integration.MalilibIntegration.MalilibAction;
 import java.util.ArrayList;
@@ -35,8 +36,7 @@ public class MalilibSelectionScreen extends Screen {
     private MalilibList malilibList;
 
     public MalilibSelectionScreen(Screen parent, Consumer<MalilibAction> onSelect) {
-
-        super(Component.literal("Select Malilib Action"));
+        super(Component.translatable("screen.radial.malilib_picker.title"));
 
         this.parent = parent;
         this.onSelect = onSelect;
@@ -84,7 +84,6 @@ public class MalilibSelectionScreen extends Screen {
         }
 
         int tabWidth = Math.min(80, width / actionsByMod.size());
-
         int xOffset = (width - tabWidth * actionsByMod.size()) / 2;
 
         for (String modName : actionsByMod.keySet()) {
@@ -112,16 +111,13 @@ public class MalilibSelectionScreen extends Screen {
                 listWidth,
                 20,
                 Component.translatable("screen.radial.editor.search"));
-
         searchField.setHint(Component.translatable("screen.radial.editor.search"));
-
         searchField.setResponder(this::updateSearch);
 
         addRenderableWidget(searchField);
 
         malilibList =
                 new MalilibList(Minecraft.getInstance(), listWidth, getListHeight(), getListStartY(), ENTRY_HEIGHT);
-
         malilibList.updateSizeAndPosition(listWidth, getListHeight(), getListLeft(), getListStartY());
 
         addRenderableWidget(malilibList);
@@ -137,7 +133,6 @@ public class MalilibSelectionScreen extends Screen {
 
     private void setTab(String tabName) {
         currentTab = tabName;
-
         currentActions = actionsByMod.getOrDefault(tabName, new ArrayList<>());
 
         if (searchField != null) {
@@ -172,16 +167,15 @@ public class MalilibSelectionScreen extends Screen {
 
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-
         graphics.fillGradient(0, 0, width, height, 0xC0101010, 0xD0101010);
 
         if (actionsByMod.isEmpty()) {
             graphics.centeredText(
-                    font, "No Malilib mods found or no hotkeys available.", width / 2, height / 2, 0xFF555555);
-
-            super.extractRenderState(graphics, mouseX, mouseY, delta);
-
-            return;
+                    font,
+                    Component.translatable("screen.radial.malilib_picker.empty"),
+                    width / 2,
+                    height / 2,
+                    0xFF555555);
         }
 
         super.extractRenderState(graphics, mouseX, mouseY, delta);
@@ -195,7 +189,6 @@ public class MalilibSelectionScreen extends Screen {
     private static class MalilibList extends ObjectSelectionList<MalilibEntry> {
 
         private MalilibList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
-
             super(minecraft, width, height, y, itemHeight);
         }
 
@@ -212,7 +205,6 @@ public class MalilibSelectionScreen extends Screen {
         private final Runnable onClose;
 
         private MalilibEntry(MalilibAction action, Consumer<MalilibAction> onSelect, Runnable onClose) {
-
             this.action = action;
             this.onSelect = onSelect;
             this.onClose = onClose;
@@ -221,7 +213,6 @@ public class MalilibSelectionScreen extends Screen {
         @Override
         public void extractContent(
                 GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float delta) {
-
             Minecraft client = Minecraft.getInstance();
 
             int left = getContentX();
@@ -236,7 +227,6 @@ public class MalilibSelectionScreen extends Screen {
             graphics.text(client.font, action.displayName(), left + 8, textY, 0xFFFFFFFF);
 
             String category = action.category();
-
             int categoryWidth = client.font.width(category);
 
             graphics.text(client.font, category, right - categoryWidth - 8, textY, 0xFFAAAAAA);
@@ -244,8 +234,7 @@ public class MalilibSelectionScreen extends Screen {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-
-            if (event.button() != 0) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
                 return false;
             }
 

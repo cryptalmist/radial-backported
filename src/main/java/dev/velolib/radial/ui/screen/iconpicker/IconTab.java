@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 
 public interface IconTab {
@@ -20,4 +21,14 @@ public interface IconTab {
     void updateSearch(String query);
 
     boolean showSearchBar();
+
+    // Whether this tab offers the given icon id, so the picker can open on the tab holding the current icon
+    default boolean accepts(String iconId) {
+        return false;
+    }
+
+    // Lets the tab handle keyboard navigation before the screen's own focus handling
+    default boolean keyPressed(KeyEvent event) {
+        return false;
+    }
 }

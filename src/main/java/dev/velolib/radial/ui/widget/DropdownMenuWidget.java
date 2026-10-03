@@ -16,13 +16,16 @@ import org.jspecify.annotations.NonNull;
 
 public class DropdownMenuWidget<T> extends AbstractWidget {
     private static final int MAX_VISIBLE_ITEMS = 6;
+
     private static final Identifier SPRITE_HIGHLIGHTED =
             Identifier.fromNamespaceAndPath("minecraft", "widget/text_field_highlighted");
+
     private final List<T> options;
     private final T currentSelection;
     private final Function<T, Component> labelMapper;
     private final DropdownButtonWidget<T> parentButton;
     private final int itemHeight;
+
     private double scrollAmount = 0;
 
     public DropdownMenuWidget(
@@ -34,7 +37,9 @@ public class DropdownMenuWidget<T> extends AbstractWidget {
             T currentSelection,
             Function<T, Component> labelMapper,
             DropdownButtonWidget<T> parentButton) {
+
         super(x, y, width, Math.min(options.size(), MAX_VISIBLE_ITEMS) * itemHeight, Component.empty());
+
         this.options = options;
         this.currentSelection = currentSelection;
         this.labelMapper = labelMapper;
@@ -47,89 +52,156 @@ public class DropdownMenuWidget<T> extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (this.isMouseOver(mouseX, mouseY)) {
-            int maxScroll = getMaxScroll();
-            if (maxScroll > 0) {
-                this.scrollAmount -= scrollY * this.itemHeight;
-                this.scrollAmount = Mth.clamp(this.scrollAmount, 0, maxScroll);
-
-                return true;
-            }
-        }
-
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return mouseX >= this.getX()
+                && mouseX < this.getX() + this.getWidth()
+                && mouseY >= this.getY()
+                && mouseY < this.getY() + this.getHeight();
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
-        return mouseX >= getX() && mouseX < getX() + width && mouseY >= getY() && mouseY < getY() + height;
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+
+        /*
+         * Only consume the event when the mouse is actually inside
+         * the dropdown. This prevents the event from being passed
+         * to unrelated widgets.
+         */
+        if (!this.isMouseOver(mouseX, mouseY)) {
+            return false;
+        }
+
+        int maxScroll = getMaxScroll();
+
+        if (maxScroll <= 0) {
+            // Still consume the event because the dropdown is hovered.
+            return true;
+        }
+
+        this.scrollAmount -= scrollY * this.itemHeight;
+
+        this.scrollAmount = Mth.clamp(this.scrollAmount, 0, maxScroll);
+
+        return true;
     }
 
     @Override
     public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
+
         if (this.isMouseOver(event.x(), event.y())) {
             this.onClick(event, doubleClick);
             return true;
         }
 
+        /*
+         * Clicking outside the dropdown closes it.
+         */
         this.parentButton.closeMenu();
+
         return false;
     }
 
     @Override
     public void onClick(final MouseButtonEvent event, final boolean doubleClick) {
+
         double mouseY = event.y();
 
-        int index = (int) ((mouseY - getY() + this.scrollAmount) / itemHeight);
+        int index = (int) ((mouseY - this.getY() + this.scrollAmount) / this.itemHeight);
 
-        if (index >= 0 && index < options.size()) {
+        if (index >= 0 && index < this.options.size()) {
             this.playDownSound(Minecraft.getInstance().getSoundManager());
-            T selected = options.get(index);
+
+            T selected = this.options.get(index);
+
             this.parentButton.updateSelection(selected);
         }
     }
 
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
 
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SPRITE_HIGHLIGHTED, getX(), getY(), width, height);
+        /*
+         * Dropdown background/border.
+         */
+        graphics.blitSprite(
+                RenderPipelines.GUI_TEXTURED,
+                SPRITE_HIGHLIGHTED,
+                this.getX(),
+                this.getY(),
+                this.getWidth(),
+                this.getHeight());
 
-        graphics.enableScissor(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1);
+        /*
+         * Clip item rendering to the dropdown bounds.
+         */
+        graphics.enableScissor(
+                this.getX() + 1,
+                this.getY() + 1,
+                this.getX() + this.getWidth() - 1,
+                this.getY() + this.getHeight() - 1);
 
-        for (int i = 0; i < options.size(); i++) {
-            T option = options.get(i);
-            int itemY = (int) (getY() + (i * itemHeight) - this.scrollAmount);
+        for (int i = 0; i < this.options.size(); i++) {
+            T option = this.options.get(i);
 
-            if (itemY + itemHeight < getY() || itemY > getY() + height) continue;
+            int itemY = (int) (this.getY() + (i * this.itemHeight) - this.scrollAmount);
 
-            boolean isItemHovered = mouseX >= getX()
-                    && mouseX < getX() + width
-                    && mouseY >= itemY
-                    && mouseY < itemY + itemHeight
-                    && mouseY >= getY()
-                    && mouseY <= getY() + height;
-
-            if (isItemHovered) {
-                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SPRITE_HIGHLIGHTED, getX(), itemY, width, itemHeight);
+            /*
+             * Skip items that are completely outside the visible area.
+             */
+            if (itemY + this.itemHeight < this.getY() || itemY > this.getY() + this.getHeight()) {
+                continue;
             }
 
-            Component text = labelMapper.apply(option);
-            int optionColor = option.equals(currentSelection) ? 0xFF55FF55 : 0xFFFFFFFF;
-            graphics.text(font, text, getX() + 4, itemY + (itemHeight - 8) / 2, optionColor);
+            boolean isItemHovered = mouseX >= this.getX()
+                    && mouseX < this.getX() + this.getWidth()
+                    && mouseY >= itemY
+                    && mouseY < itemY + this.itemHeight
+                    && mouseY >= this.getY()
+                    && mouseY < this.getY() + this.getHeight();
+
+            /*
+             * Hover highlight.
+             */
+            if (isItemHovered) {
+                graphics.blitSprite(
+                        RenderPipelines.GUI_TEXTURED,
+                        SPRITE_HIGHLIGHTED,
+                        this.getX(),
+                        itemY,
+                        this.getWidth(),
+                        this.itemHeight);
+            }
+
+            Component text = this.labelMapper.apply(option);
+
+            int optionColor = option.equals(this.currentSelection) ? 0xFF55FF55 : 0xFFFFFFFF;
+
+            graphics.text(font, text, this.getX() + 4, itemY + (this.itemHeight - 8) / 2, optionColor);
         }
+
         graphics.disableScissor();
 
-        // --- SCROLLBAR RENDER ---
+        /*
+         * Scrollbar.
+         */
         int maxScroll = getMaxScroll();
+
         if (maxScroll > 0) {
             int scrollbarWidth = 2;
-            int scrollbarHeight =
-                    Math.max(8, (int) ((float) this.height * this.height / (options.size() * itemHeight)));
-            int scrollbarX = getX() + width - scrollbarWidth - 2; // Moved in slightly to respect the border
-            int scrollbarY = getY() + 1 + (int) ((this.scrollAmount / maxScroll) * (this.height - 2 - scrollbarHeight));
+
+            int scrollbarHeight = Math.max(
+                    8, (int) ((float) this.getHeight() * this.getHeight() / (this.options.size() * this.itemHeight)));
+
+            int scrollbarX = this.getX() + this.getWidth() - scrollbarWidth - 2;
+
+            int scrollbarTrackHeight = this.getHeight() - 2;
+
+            int scrollbarY = this.getY()
+                    + 1
+                    + (int) ((this.scrollAmount / maxScroll) * (scrollbarTrackHeight - scrollbarHeight));
 
             graphics.fill(
                     scrollbarX, scrollbarY, scrollbarX + scrollbarWidth, scrollbarY + scrollbarHeight, 0x80888888);
