@@ -252,9 +252,8 @@ public class MacroActionList extends ContainerObjectSelectionList<MacroActionLis
         if (this.draggedEntry != null) {
             // Safety net in case the release event never reached the list (e.g. window lost focus).
             // Queries GLFW directly: MouseHandler#isLeftPressed is only updated while no screen is open.
-            if (GLFW.glfwGetMouseButton(
-                                    Minecraft.getInstance().getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_LEFT)
-                            == GLFW.GLFW_RELEASE) {
+            if (GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_LEFT)
+                    == GLFW.GLFW_RELEASE) {
                 this.endDrag();
             } else {
                 this.autoScrollWhileDragging();

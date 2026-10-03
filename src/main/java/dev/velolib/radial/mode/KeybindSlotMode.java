@@ -16,7 +16,6 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 public class KeybindSlotMode extends IconEnabledSlotMode {
 
@@ -27,7 +26,8 @@ public class KeybindSlotMode extends IconEnabledSlotMode {
                     client.gameDirectory,
                     client.getMainRenderTarget(),
                     msg -> RadialClient.LOGGER.info("Screenshot saved: {}", msg.getString())),
-            "key.debug.overlay", client -> client.getDebugOverlay().showDebugScreen());
+            "key.debug.overlay",
+            client -> client.getDebugOverlay().showDebugScreen());
 
     @Override
     public Component getTranslatedName() {
