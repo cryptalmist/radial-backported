@@ -4,16 +4,20 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.StringReader;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.util.PhosphorIconCache;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.commands.arguments.item.ItemParser;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -238,15 +242,25 @@ public final class SlotRenderHelper {
         }
 
         // --- Effect ---
+        // In 1.21.1 mob effect icons live in their own atlas (MobEffectTextureManager),
+        // not the GUI atlas, so blitSprite can't see them. Draw the atlas sprite directly.
         if (iconId.startsWith(EFFECT_PREFIX)) {
             ResourceLocation id = ResourceLocation.tryParse(iconId.substring(EFFECT_PREFIX.length()));
-            if (id == null || !BuiltInRegistries.MOB_EFFECT.containsKey(id)) {
+            if (id == null) {
                 return;
             }
 
+            Optional<Holder.Reference<MobEffect>> holder = BuiltInRegistries.MOB_EFFECT.getHolder(id);
+            if (holder.isEmpty()) {
+                return;
+            }
+
+            TextureAtlasSprite sprite =
+                    Minecraft.getInstance().getMobEffectTextures().get(holder.get());
+
             // Drawn at the sprite's native 18px so it stays crisp
             int offset = (size - 18) / 2;
-            graphics.blitSprite(effectSprite(id), x + offset, y + offset, 18, 18);
+            graphics.blit(x + offset, y + offset, 0, 18, 18, sprite);
             return;
         }
 
@@ -260,9 +274,5 @@ public final class SlotRenderHelper {
             int offset = (size - 16) / 2;
             graphics.renderFakeItem(stack, x + offset, y + offset);
         }
-    }
-
-    public static ResourceLocation effectSprite(ResourceLocation effectId) {
-        return ResourceLocation.fromNamespaceAndPath(effectId.getNamespace(), "mob_effect/" + effectId.getPath());
     }
 }

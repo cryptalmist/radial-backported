@@ -40,24 +40,19 @@ public class GlyphIconTab extends GridIconTab<GlyphCache.Glyph> {
 
     @Override
     protected void renderIcon(
-            GuiGraphics graphics,
-            int x,
-            int y,
-            int mouseX,
-            int mouseY,
-            GlyphCache.Glyph glyph,
-            boolean hovered) {
+            GuiGraphics graphics, int x, int y, int mouseX, int mouseY, GlyphCache.Glyph glyph) {
         SlotRenderHelper.renderIcon(graphics, getIconId(glyph), x, y, getSlotSize(), 0xFFFFFFFF, () -> null);
+    }
 
-        if (hovered) {
-            List<Component> lines = glyph.name() != null
-                    ? List.of(
-                            Component.literal(glyph.name()),
-                            Component.literal(glyph.hex()).withStyle(ChatFormatting.DARK_GRAY))
-                    : List.of(Component.literal(glyph.hex()));
+    @Override
+    protected void renderHoverTooltip(GuiGraphics graphics, GlyphCache.Glyph glyph, int mouseX, int mouseY) {
+        List<Component> lines = glyph.name() != null
+                ? List.of(
+                        Component.literal(glyph.name()),
+                        Component.literal(glyph.hex()).withStyle(ChatFormatting.DARK_GRAY))
+                : List.of(Component.literal(glyph.hex()));
 
-            graphics.renderTooltip(Minecraft.getInstance().font, lines, Optional.empty(), mouseX, mouseY);
-        }
+        graphics.renderTooltip(Minecraft.getInstance().font, lines, Optional.empty(), mouseX, mouseY);
     }
 
     @Override

@@ -59,19 +59,19 @@ public class RecentIconTab extends GridIconTab<String> {
     }
 
     @Override
-    protected void renderIcon(
-            GuiGraphics graphics, int x, int y, int mouseX, int mouseY, String id, boolean hovered) {
+    protected void renderIcon(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, String id) {
         SlotRenderHelper.renderIcon(graphics, id, x, y, getSlotSize(), 0xFFFFFFFF, () -> getStack(id));
+    }
 
-        if (hovered) {
-            Minecraft client = Minecraft.getInstance();
-            ItemStack dynamic = SlotRenderHelper.resolveDynamicItem(id);
+    @Override
+    protected void renderHoverTooltip(GuiGraphics graphics, String id, int mouseX, int mouseY) {
+        Minecraft client = Minecraft.getInstance();
+        ItemStack dynamic = SlotRenderHelper.resolveDynamicItem(id);
 
-            if (dynamic == null && !id.startsWith("radial:")) {
-                graphics.renderTooltip(client.font, getStack(id), mouseX, mouseY);
-            } else {
-                graphics.renderTooltip(client.font, Component.literal(getLabel(id)), mouseX, mouseY);
-            }
+        if (dynamic == null && !id.startsWith("radial:")) {
+            graphics.renderTooltip(client.font, getStack(id), mouseX, mouseY);
+        } else {
+            graphics.renderTooltip(client.font, Component.literal(getLabel(id)), mouseX, mouseY);
         }
     }
 

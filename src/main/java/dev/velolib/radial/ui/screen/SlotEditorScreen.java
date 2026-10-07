@@ -85,29 +85,23 @@ public class SlotEditorScreen extends Screen {
                 .filter(mode -> !mode.isMacroOnly())
                 .toList();
 
-        modeDropdown =
-                new DropdownButtonWidget<>(
-                        0,
-                        0,
-                        contentWidth,
-                        ROW_HEIGHT,
-                        availableModes,
-                        slot.mode,
-                        SlotMode::getTranslatedName,
-                        selectedMode -> {
-                            slot.mode = selectedMode;
-                            selectedMode.onInitialize(slot);
-                            this.rebuildWidgets();
-                        },
-                        this::addRenderableWidget) {
-                    @Override
-                    public void closeMenu() {
-                        if (this.isMenuOpen()) {
-                            SlotEditorScreen.this.removeWidget(this.getActiveMenu());
-                        }
-                        super.closeMenu();
-                    }
-                };
+        // The menu is floating: it is never added to the screen's widgets and is
+        // rendered explicitly on top in render(), so form widgets can never
+        // paint over it and rebuilds can't leave stale menus behind.
+        modeDropdown = new DropdownButtonWidget<>(
+                0,
+                0,
+                contentWidth,
+                ROW_HEIGHT,
+                availableModes,
+                slot.mode,
+                SlotMode::getTranslatedName,
+                selectedMode -> {
+                    slot.mode = selectedMode;
+                    selectedMode.onInitialize(slot);
+                    this.rebuildWidgets();
+                },
+                menu -> {});
         modeGroup.addChild(modeDropdown);
         mainLayout.addChild(modeGroup);
 

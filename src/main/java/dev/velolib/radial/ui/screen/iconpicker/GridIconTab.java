@@ -33,6 +33,12 @@ public abstract class GridIconTab<T> implements IconTab {
     private int columns = 1;
     private String query = "";
 
+    // Item under the mouse this frame; its tooltip is drawn after the whole grid
+    // so later cells can't paint over it
+    private T hoveredItem;
+    private int hoveredMouseX;
+    private int hoveredMouseY;
+
     // Keyboard cursor into currentResults, or -1 while focus is still on the search bar
     private int cursor = -1;
 
@@ -47,8 +53,19 @@ public abstract class GridIconTab<T> implements IconTab {
      */
     protected abstract List<T> search(String query);
 
-    protected abstract void renderIcon(
-            GuiGraphics graphics, int x, int y, int mouseX, int mouseY, T item, boolean hovered);
+    protected abstract void renderIcon(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, T item);
+
+    /**
+     * Draws the hover tooltip for an item. Called once per frame after the whole grid,
+     * so the tooltip always lands on top of every cell.
+     */
+    protected abstract void renderHoverTooltip(GuiGraphics graphics, T item, int mouseX, int mouseY);
+
+    protected final void markHovered(T item, int mouseX, int mouseY) {
+        hoveredItem = item;
+        hoveredMouseX = mouseX;
+        hoveredMouseY = mouseY;
+    }
 
     protected abstract String getIconId(T item);
 
@@ -237,7 +254,13 @@ public abstract class GridIconTab<T> implements IconTab {
 
         @Override
         public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+            hoveredItem = null;
             super.renderWidget(graphics, mouseX, mouseY, delta);
+
+            if (hoveredItem != null) {
+                renderHoverTooltip(graphics, hoveredItem, hoveredMouseX, hoveredMouseY);
+                hoveredItem = null;
+            }
 
             Font font = Minecraft.getInstance().font;
 
@@ -293,7 +316,11 @@ public abstract class GridIconTab<T> implements IconTab {
                     graphics.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, 0x40FFFFFF);
                 }
 
-                renderIcon(graphics, x, y, mouseX, mouseY, item, slotHovered);
+                renderIcon(graphics, x, y, mouseX, mouseY, item);
+
+                if (slotHovered) {
+                    markHovered(item, mouseX, mouseY);
+                }
 
                 if (iconId.equals(currentId)) {
                     graphics.renderOutline(x, y, SLOT_SIZE, SLOT_SIZE, CURRENT_OUTLINE_COLOR);

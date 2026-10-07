@@ -45,13 +45,13 @@ public class EffectIconTab extends GridIconTab<EffectIconTab.EffectEntry> {
     }
 
     @Override
-    protected void renderIcon(
-            GuiGraphics graphics, int x, int y, int mouseX, int mouseY, EffectEntry effect, boolean hovered) {
+    protected void renderIcon(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, EffectEntry effect) {
         SlotRenderHelper.renderIcon(graphics, getIconId(effect), x, y, getSlotSize(), 0xFFFFFFFF, () -> null);
+    }
 
-        if (hovered) {
-            graphics.renderTooltip(Minecraft.getInstance().font, effect.name(), mouseX, mouseY);
-        }
+    @Override
+    protected void renderHoverTooltip(GuiGraphics graphics, EffectEntry effect, int mouseX, int mouseY) {
+        graphics.renderTooltip(Minecraft.getInstance().font, effect.name(), mouseX, mouseY);
     }
 
     @Override

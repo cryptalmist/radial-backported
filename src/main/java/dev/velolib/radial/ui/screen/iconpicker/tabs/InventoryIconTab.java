@@ -116,6 +116,8 @@ public class InventoryIconTab implements IconTab {
                 256,
                 256);
 
+        ItemStack hoveredStack = null;
+
         for (InvSlot slot : SLOTS) {
             int x = bgX + slot.x();
             int y = bgY + slot.y();
@@ -132,9 +134,14 @@ public class InventoryIconTab implements IconTab {
             if (isHovered(mouseX, mouseY, x, y)) {
                 graphics.fill(x, y, x + INV_SLOT_SIZE, y + INV_SLOT_SIZE, 0x40FFFFFF);
                 if (stack != null && !stack.isEmpty()) {
-                    graphics.renderTooltip(mc.font, stack, mouseX, mouseY);
+                    hoveredStack = stack;
                 }
             }
+        }
+
+        // Drawn after every slot so later slots can't paint over it
+        if (hoveredStack != null) {
+            graphics.renderTooltip(mc.font, hoveredStack, mouseX, mouseY);
         }
     }
 

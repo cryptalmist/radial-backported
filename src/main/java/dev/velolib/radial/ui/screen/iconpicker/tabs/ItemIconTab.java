@@ -72,19 +72,14 @@ public class ItemIconTab extends GridIconTab<ItemIconTab.ItemSearchEntry> {
 
     @Override
     protected void renderIcon(
-            GuiGraphics graphics,
-            int x,
-            int y,
-            int mouseX,
-            int mouseY,
-            ItemSearchEntry item,
-            boolean hovered) {
+            GuiGraphics graphics, int x, int y, int mouseX, int mouseY, ItemSearchEntry item) {
 
         graphics.renderFakeItem(item.stack(), x + 2, y + 2);
+    }
 
-        if (hovered) {
-            graphics.renderTooltip(Minecraft.getInstance().font, item.stack(), mouseX, mouseY);
-        }
+    @Override
+    protected void renderHoverTooltip(GuiGraphics graphics, ItemSearchEntry item, int mouseX, int mouseY) {
+        graphics.renderTooltip(Minecraft.getInstance().font, item.stack(), mouseX, mouseY);
     }
 
     @Override
