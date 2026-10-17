@@ -50,10 +50,19 @@ Swap `fabric-1.21.8` for the branch you want. The jar lands in `build/libs/`.
 
 Every push to a port branch builds in CI and attaches the jar to the current mod-version release automatically, so the download table above can't go stale.
 
+## AI tooling
+
+These ports were written with AI coding agents rather than by hand. Which agent did what:
+
+- **OpenCode** — the `fabric-1.21.11`, `fabric-26.1.2` and `neoforge-1.21.1` ports, and ongoing maintenance.
+- **DeepSeek Harness** — the `fabric-1.21.8` port by [ChenJL66666](https://github.com/ChenJL66666).
+
+Agent output is never taken at face value: every port was compiled, reviewed and tested by a human before it was published here. If something still plays wrong on your setup, open an issue — bugs are the fastest way to get an agent-assisted codebase fixed.
+
 ## Credits
 
 - **Radial** by [velo](https://github.com/velolib) — the upstream project these ports are derived from.
-- **Ports and ongoing maintenance by cryptalmist** (`fabric-1.21.11`, `fabric-26.1.2`, `neoforge-1.21.1`), produced with AI coding agents and reviewed by a human before release.
+- **Ports and ongoing maintenance by cryptalmist** (`fabric-1.21.11`, `fabric-26.1.2`, `neoforge-1.21.1`), produced with [OpenCode](https://opencode.ai) and reviewed by a human before release.
 - **Fabric 1.21.8 port by [ChenJL66666](https://github.com/ChenJL66666)**, produced with an AI agent and smoke-tested in-game, merged in [PR #1](https://github.com/cryptalmist/radial-backported/pull/1).
 
 ## License
