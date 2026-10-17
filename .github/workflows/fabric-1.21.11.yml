@@ -6,6 +6,9 @@ on:
     branches: [ "fabric-1.21.11" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build 1.21.11 Fabric Jar (GitHub-only, no local build)
@@ -49,3 +52,25 @@ jobs:
           name: radial-fabric-1.21.11-${{ github.sha }}
           path: build/libs/*.jar
           if-no-files-found: error
+
+      - name: Attach JAR to Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mod_version="$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '\r')"
+          tag="${mod_version%%+*}"
+          jar="build/libs/radial-${mod_version}.jar"
+          if [ ! -f "$jar" ]; then
+            jar="$(ls build/libs/*.jar | head -n 1)"
+          fi
+          echo "mod_version=$mod_version tag=$tag jar=$jar"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "Radial $tag" \
+              --notes "One release per mod version. Every Minecraft target branch attaches its own jar here on push; the tag points at whichever branch created the release first." \
+              || gh release view "$tag" >/dev/null
+          fi
+          gh release upload "$tag" "$jar" --clobber
