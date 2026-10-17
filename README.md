@@ -1,10 +1,10 @@
-# Radial — Backports
+# Radial, ported and maintained
 
-Community backports of [Radial](https://github.com/velolib/radial) by [velo](https://github.com/velolib), for Minecraft versions that upstream's own releases don't cover.
+[Radial](https://github.com/velolib/radial) by [velo](https://github.com/velolib), ported and maintained for Minecraft versions that upstream's own releases don't cover.
 
-Everything here is ported from **Radial 3.2.2**: same features, same config format, nothing dropped. Only the version-specific API calls were re-expressed for the older game versions.
+Currently ported from **Radial 3.2.2**: same features, same config format, nothing dropped. Only the version-specific API calls were re-expressed for the older game versions. These ports aren't frozen — when upstream ships a new Radial version, they're updated to match.
 
-Upstream source, issues and changelog live at [velolib/radial](https://github.com/velolib/radial). This fork exists only to host the backports, so `main` here is documentation — the source for each port is on its own branch.
+Upstream source, issues and changelog live at [velolib/radial](https://github.com/velolib/radial). This fork exists only to host the ports, so `main` here is documentation — the source for each port is on its own branch, and each one is kept up to date with upstream.
 
 ![The Radial menu](assets/propho1.webp)
 
@@ -12,7 +12,7 @@ Upstream source, issues and changelog live at [velolib/radial](https://github.co
 
 All builds are on the **3.2.2** release. Pick the row that matches your Minecraft version.
 
-| Minecraft | Loader | Java | Port by | Download |
+| Minecraft | Loader | Java | Ported by | Download |
 | --- | --- | --- | --- | --- |
 | 1.21.8 | Fabric | 21 | [ChenJL66666](https://github.com/ChenJL66666) | [radial-3.2.2+1.21.8.jar](https://github.com/cryptalmist/radial-backported/releases/download/3.2.2/radial-3.2.2%2B1.21.8.jar) |
 | 1.21.11 | Fabric | 21 | cryptalmist | [radial-3.2.2+1.21.11.jar](https://github.com/cryptalmist/radial-backported/releases/download/3.2.2/radial-3.2.2%2B1.21.11.jar) |
@@ -27,7 +27,9 @@ Releases are named after the mod version, not the Minecraft version, so every ja
 
 ## Branches
 
-| Branch | Target | Notes | Port by |
+The source for each port is on its own branch. Every branch is maintained: when upstream releases a new Radial version, the port is updated to it and a new release is cut.
+
+| Branch | Target | Notes | Ported by |
 | --- | --- | --- | --- |
 | `fabric-1.21.8` | Fabric 1.21.8 | Feature-complete port of 3.2.2, built on top of the 1.21.11 port | [ChenJL66666](https://github.com/ChenJL66666) — [PR #1](https://github.com/cryptalmist/radial-backported/pull/1) |
 | `fabric-1.21.11` | Fabric 1.21.11 | Base port for the 1.21.x line | cryptalmist |
@@ -51,8 +53,8 @@ Every push to a port branch builds in CI and attaches the jar to the current mod
 ## Credits
 
 - **Radial** by [velo](https://github.com/velolib) — the upstream project these ports are derived from.
-- **Backports by cryptalmist** (`fabric-1.21.11`, `fabric-26.1.2`, `neoforge-1.21.1`), produced with AI coding agents and reviewed by a human before release.
-- **Fabric 1.21.8 backport by [ChenJL66666](https://github.com/ChenJL66666)**, produced with an AI agent and smoke-tested in-game, merged in [PR #1](https://github.com/cryptalmist/radial-backported/pull/1).
+- **Ports and ongoing maintenance by cryptalmist** (`fabric-1.21.11`, `fabric-26.1.2`, `neoforge-1.21.1`), produced with AI coding agents and reviewed by a human before release.
+- **Fabric 1.21.8 port by [ChenJL66666](https://github.com/ChenJL66666)**, produced with an AI agent and smoke-tested in-game, merged in [PR #1](https://github.com/cryptalmist/radial-backported/pull/1).
 
 ## License
 
