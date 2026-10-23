@@ -12,9 +12,9 @@ import dev.velolib.radial.render.DonutRenderer;
 import java.awt.*;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -487,21 +487,21 @@ public class RadialConfigScreen {
             float hoverScale =
                     config.enableHoverAnimation ? 1.0F + PREVIEW_HOVER_SCALE * (highlighted ? 1.0F : 0.0F) : 1.0F;
 
-            graphics.getMatrices().pushMatrix();
-            graphics.getMatrices().translate(slotX, slotY);
-            graphics.getMatrices().scale(hoverScale, hoverScale);
+            graphics.getMatrices().push();
+            graphics.getMatrices().translate(slotX, slotY, 0.0f);
+            graphics.getMatrices().scale(hoverScale, hoverScale, 1.0f);
 
             int drawOffset = -SLOT_SIZE / 2;
 
             graphics.drawGuiTexture(
-                    RenderPipelines.GUI_TEXTURED, SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
+                    RenderLayer::getGuiTextured, SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
 
             if (highlighted) {
                 graphics.drawGuiTexture(
-                        RenderPipelines.GUI_TEXTURED, SELECTION_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
+                        RenderLayer::getGuiTextured, SELECTION_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
             }
 
-            graphics.getMatrices().popMatrix();
+            graphics.getMatrices().pop();
         }
     }
 }

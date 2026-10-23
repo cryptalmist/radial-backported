@@ -5,11 +5,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -98,7 +98,7 @@ public class DropdownButtonWidget<T> extends ClickableWidget {
         boolean open = isMenuOpen();
         Identifier currentSprite = (this.isFocused() || open) ? SPRITE_HIGHLIGHTED : SPRITE;
 
-        graphics.drawGuiTexture(RenderPipelines.GUI_TEXTURED, currentSprite, getX(), getY(), width, height);
+        graphics.drawGuiTexture(RenderLayer::getGuiTextured, currentSprite, getX(), getY(), width, height);
 
         int textColor = this.active ? 0xFFFFFFFF : 0xFFA0A0A0;
         Text currentText = this.labelMapper.apply(this.selectedOption);

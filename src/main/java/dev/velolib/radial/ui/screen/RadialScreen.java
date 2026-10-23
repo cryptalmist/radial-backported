@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -154,6 +154,13 @@ public class RadialScreen extends Screen {
 
     @Override
     public void render(DrawContext graphics, int mouseX, int mouseY, float delta) {
+        // 1.21.4: Screen#applyBlur() post-processes the framebuffer IMMEDIATELY (1.21.8's
+        // DrawContext#applyBlur() only queues it), so it has to run before anything is drawn -
+        // otherwise the menu itself ends up blurred. renderBackground() below is therefore a no-op.
+        if (RadialConfig.INSTANCE.enableBackgroundBlur && client != null && client.world != null) {
+            this.applyBlur();
+        }
+
         RadialConfig config = RadialConfig.INSTANCE;
         RadialConfig.ActivationMode mode = config.activationMode;
         boolean isScrollMode =
@@ -267,17 +274,17 @@ public class RadialScreen extends Screen {
 
             float scale = revealEase * (config.enableHoverAnimation ? 1.0F + SLOT_HOVER_SCALE * smoothedHover : 1.0F);
 
-            graphics.getMatrices().pushMatrix();
-            graphics.getMatrices().translate(slotX, slotY);
-            graphics.getMatrices().scale(scale, scale);
+            graphics.getMatrices().push();
+            graphics.getMatrices().translate(slotX, slotY, 0.0f);
+            graphics.getMatrices().scale(scale, scale, 1.0f);
 
             int drawOffset = -SLOT_SIZE / 2;
 
             graphics.drawGuiTexture(
-                    RenderPipelines.GUI_TEXTURED, SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
+                    RenderLayer::getGuiTextured, SLOT_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
             if (i == hoveredSlot) {
                 graphics.drawGuiTexture(
-                        RenderPipelines.GUI_TEXTURED, SELECTION_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
+                        RenderLayer::getGuiTextured, SELECTION_TEXTURE, drawOffset, drawOffset, SLOT_SIZE, SLOT_SIZE);
             }
 
             if (isSubmenu() && i == 0) {
@@ -291,7 +298,7 @@ public class RadialScreen extends Screen {
                 }
             }
 
-            graphics.getMatrices().popMatrix();
+            graphics.getMatrices().pop();
         }
 
         // 7. Render Center Label
@@ -518,12 +525,7 @@ public class RadialScreen extends Screen {
 
     @Override
     public void renderBackground(DrawContext graphics, int mouseX, int mouseY, float delta) {
-        // Intentionally skip super.renderBackground to remove the dark gradient
-
-        if (RadialConfig.INSTANCE.enableBackgroundBlur) {
-            // Yarn 1.21.11: DrawContext.applyBlur() renders blur without dark gradient.
-            // Animated via OptionsMixin overriding getMenuBackgroundBlurrinessValue().
-            graphics.applyBlur();
-        }
+        // No-op on purpose: skipping super.renderBackground removes the dark gradient, and the blur
+        // is applied at the top of render() instead (see the comment there).
     }
 }

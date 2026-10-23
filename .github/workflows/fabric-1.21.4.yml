@@ -1,0 +1,77 @@
+name: Fabric 1.21.4 Backport Build
+on:
+  push:
+    branches: [ "fabric-1.21.4" ]
+  pull_request:
+    # PRs for this line are opened against fabric-1.21.11, so that base must be listed too
+    branches: [ "fabric-1.21.4", "fabric-1.21.8" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build 1.21.4 Fabric Jar (GitHub-only, no local build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Setup Java 21 (MC 1.21.4)
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle Packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-1.21.4-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      - name: Make Gradle Executable
+        run: chmod +x gradlew
+
+      - name: Build JAR
+        run: ./gradlew spotlessApply build --stacktrace --no-daemon
+
+      - name: Clean Extra Artifacts
+        run: |
+          rm build/libs/*-sources.jar build/libs/*-dev.jar || true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: radial-fabric-1.21.4-${{ github.sha }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Attach JAR to Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mod_version="$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '\r')"
+          tag="${mod_version%%+*}"
+          jar="build/libs/radial-${mod_version}.jar"
+          if [ ! -f "$jar" ]; then
+            jar="$(ls build/libs/*.jar | head -n 1)"
+          fi
+          echo "mod_version=$mod_version tag=$tag jar=$jar"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "$tag" \
+              --notes "One release per mod version. Every Minecraft target branch attaches its own jar here on push; the tag points at whichever branch created the release first." \
+              || gh release view "$tag" >/dev/null
+          fi
+          gh release upload "$tag" "$jar" --clobber

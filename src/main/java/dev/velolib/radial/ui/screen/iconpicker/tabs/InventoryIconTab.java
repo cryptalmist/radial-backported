@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -114,7 +114,7 @@ public class InventoryIconTab implements IconTab {
                 0xFFAAAAAA,
                 false);
         graphics.drawTexture(
-                RenderPipelines.GUI_TEXTURED, INVENTORY_TEXTURE, bgX, bgY, 0.0F, 0.0F, INV_WIDTH, INV_HEIGHT, 256, 256);
+                RenderLayer::getGuiTextured, INVENTORY_TEXTURE, bgX, bgY, 0.0F, 0.0F, INV_WIDTH, INV_HEIGHT, 256, 256);
 
         for (InvSlot slot : SLOTS) {
             int x = bgX + slot.x();

@@ -12,6 +12,7 @@
     "CrosshairMixin",
     "KeyMappingAccessor",
     "KeyMappingMixin",
-    "OptionsMixin"
+    "OptionsMixin",
+    "ScreenOverlayMixin"
   ]
 }

@@ -5,10 +5,10 @@ import dev.velolib.radial.api.SlotMode;
 import dev.velolib.radial.api.SlotModeRegistry;
 import dev.velolib.radial.config.RadialConfig;
 import dev.velolib.radial.render.SlotRenderHelper;
+import dev.velolib.radial.ui.RadialOverlayScreen;
 import dev.velolib.radial.ui.widget.DropdownButtonWidget;
 import dev.velolib.radial.ui.widget.DropdownMenuWidget;
 import java.util.List;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -16,11 +16,12 @@ import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
 import net.minecraft.client.gui.widget.SimplePositioningWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TextWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.toast.SystemToast;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class SlotEditorScreen extends Screen {
+public class SlotEditorScreen extends Screen implements RadialOverlayScreen {
 
     private static final Identifier SLOT_TEXTURE = Identifier.of("minecraft", "gamemode_switcher/slot");
     private static final int SLOT_SIZE = 26;
@@ -43,6 +44,14 @@ public class SlotEditorScreen extends Screen {
     // Universal Widgets
     private TextFieldWidget nameField;
     private DropdownButtonWidget<SlotMode> modeDropdown;
+
+    /**
+     * 1.21.4: text is submitted in its own pass at the end of the frame, so a fill drawn "later" still ends
+     * up underneath earlier text. Instead of fighting that, the form widgets are hidden while the dropdown
+     * is open - there is nothing left for the panel to be covered by.
+     */
+    private final java.util.Map<net.minecraft.client.gui.Element, Boolean> hiddenWhileMenuOpen =
+            new java.util.IdentityHashMap<>();
 
     public SlotEditorScreen(RadialSlot slot) {
         super(Text.translatable("screen.radial.editor.title"));
@@ -102,12 +111,26 @@ public class SlotEditorScreen extends Screen {
                             selectedMode.onInitialize(slot);
                             this.clearAndInit();
                         },
-                        this::addDrawableChild) {
+                        // 1.21.4: register for input only (addSelectableChild) - the menu is drawn
+                        // manually at the end of render(), and the form is hidden meanwhile.
+                        menu -> this.hideFormForMenu()) {
+                    @Override
+                    public void onClick(double mouseX, double mouseY) {
+                        super.onClick(mouseX, mouseY);
+                        if (this.isMenuOpen()) {
+                            SlotEditorScreen.this.hideFormForMenu();
+                        }
+                    }
+
+                    @Override
+                    public void updateSelection(SlotMode option) {
+                        SlotEditorScreen.this.showFormAfterMenu();
+                        super.updateSelection(option);
+                    }
+
                     @Override
                     public void closeMenu() {
-                        if (this.isMenuOpen()) {
-                            SlotEditorScreen.this.remove(this.getActiveMenu());
-                        }
+                        SlotEditorScreen.this.showFormAfterMenu();
                         super.closeMenu();
                     }
                 };
@@ -261,8 +284,15 @@ public class SlotEditorScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(DrawContext graphics, int mouseX, int mouseY, float delta) {
+        // No-op on purpose: the backdrop (blur + darkening) is applied at the top of render().
+        // 1.21.4's applyBlur() runs immediately, so doing it inside super.render() would blur the
+        // slot preview that render() already drew.
+    }
+
+    @Override
     public void render(DrawContext graphics, int mouseX, int mouseY, float delta) {
-        graphics.fillGradient(0, 0, width, height, 0xC0101010, 0xD0101010);
+        super.renderBackground(graphics, mouseX, mouseY, delta);
 
         int centerX = width / 2;
 
@@ -272,23 +302,57 @@ public class SlotEditorScreen extends Screen {
         int iconY = (nameField != null) ? nameField.getY() - SLOT_SIZE - 20 : height / 2 - 110;
 
         // Draw background slot
-        graphics.drawGuiTexture(RenderPipelines.GUI_TEXTURED, SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
+        graphics.drawGuiTexture(RenderLayer::getGuiTextured, SLOT_TEXTURE, centerX - 13, iconY, SLOT_SIZE, SLOT_SIZE);
 
         SlotRenderHelper.renderSlotIcon(graphics, slot, centerX - 13, iconY);
 
         // --- THE MOUSE SPOOFING TRICK ---
-        boolean hoveringMenu = this.modeDropdown != null
-                && this.modeDropdown.isMenuOpen()
-                && this.modeDropdown.getActiveMenu().isMouseOver(mouseX, mouseY);
+        DropdownMenuWidget<SlotMode> openMenu = (this.modeDropdown != null && this.modeDropdown.isMenuOpen())
+                ? this.modeDropdown.getActiveMenu()
+                : null;
+        boolean hoveringMenu = openMenu != null && openMenu.isMouseOver(mouseX, mouseY);
 
         int passMouseX = hoveringMenu ? -999 : mouseX;
         int passMouseY = hoveringMenu ? -999 : mouseY;
 
         super.render(graphics, passMouseX, passMouseY, delta);
+    }
 
-        if (hoveringMenu) {
-            this.modeDropdown.getActiveMenu().render(graphics, mouseX, mouseY, delta);
+    private void hideFormForMenu() {
+        if (!this.hiddenWhileMenuOpen.isEmpty()) {
+            return;
         }
+
+        for (net.minecraft.client.gui.Element element : this.children()) {
+            if (element == this.modeDropdown) {
+                continue; // keep the button itself visible, it is the anchor of the menu
+            }
+            if (element instanceof net.minecraft.client.gui.widget.ClickableWidget widget && widget.visible) {
+                widget.visible = false;
+                this.hiddenWhileMenuOpen.put(element, Boolean.TRUE);
+            }
+        }
+    }
+
+    private void showFormAfterMenu() {
+        for (net.minecraft.client.gui.Element element : this.hiddenWhileMenuOpen.keySet()) {
+            if (element instanceof net.minecraft.client.gui.widget.ClickableWidget widget) {
+                widget.visible = true;
+            }
+        }
+        this.hiddenWhileMenuOpen.clear();
+    }
+
+    @Override
+    public void renderRadialOverlay(DrawContext graphics, int mouseX, int mouseY, float delta) {
+        if (this.modeDropdown == null || !this.modeDropdown.isMenuOpen()) {
+            return;
+        }
+
+        // 1.21.4: the GUI is flushed per RenderLayer, so a panel drawn inside render() can still end up
+        // under content submitted earlier. Flush, then draw on top of the finished frame.
+        graphics.draw();
+        this.modeDropdown.getActiveMenu().render(graphics, mouseX, mouseY, delta);
     }
 
     @Override

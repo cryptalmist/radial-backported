@@ -3,6 +3,7 @@ package dev.velolib.radial.ui.screen;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.api.SlotMode;
 import dev.velolib.radial.mode.MacroSlotMode;
+import dev.velolib.radial.ui.RadialOverlayScreen;
 import dev.velolib.radial.ui.widget.DropdownButtonWidget;
 import dev.velolib.radial.ui.widget.DropdownMenuWidget;
 import dev.velolib.radial.ui.widget.MacroActionList;
@@ -15,7 +16,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-public class MacroEditorScreen extends Screen implements MacroActionList.DropdownHost {
+public class MacroEditorScreen extends Screen implements MacroActionList.DropdownHost, RadialOverlayScreen {
 
     private static final int HEADER_HEIGHT = 40;
     private static final int FOOTER_HEIGHT = 36;
@@ -26,6 +27,8 @@ public class MacroEditorScreen extends Screen implements MacroActionList.Dropdow
 
     private final List<RadialSlot.Macro> oldMacros;
     private boolean isSaved = false;
+    private final java.util.Map<net.minecraft.client.gui.Element, Boolean> hiddenWhileMenuOpen =
+            new java.util.IdentityHashMap<>();
 
     private MacroActionList actionList;
     private DropdownButtonWidget<SlotMode> openDropdown;
@@ -79,6 +82,33 @@ public class MacroEditorScreen extends Screen implements MacroActionList.Dropdow
         return this.openDropdown != null ? this.openDropdown.getActiveMenu() : null;
     }
 
+    /**
+     * 1.21.4: text is submitted in its own pass at the end of the frame, so a fill drawn later still ends up
+     * under earlier text. The rows are therefore hidden while a menu is open, which is the only reliable way
+     * to keep them from showing through the panel.
+     */
+    private void hideRowsWhileMenuOpen() {
+        if (!this.hiddenWhileMenuOpen.isEmpty()) {
+            return;
+        }
+
+        for (net.minecraft.client.gui.Element element : this.children()) {
+            if (element instanceof net.minecraft.client.gui.widget.ClickableWidget widget && widget.visible) {
+                widget.visible = false;
+                this.hiddenWhileMenuOpen.put(element, Boolean.TRUE);
+            }
+        }
+    }
+
+    private void showRowsAfterMenu() {
+        for (net.minecraft.client.gui.Element element : this.hiddenWhileMenuOpen.keySet()) {
+            if (element instanceof net.minecraft.client.gui.widget.ClickableWidget widget) {
+                widget.visible = true;
+            }
+        }
+        this.hiddenWhileMenuOpen.clear();
+    }
+
     @Override
     public void onDropdownOpened(DropdownButtonWidget<SlotMode> button) {
         if (this.openDropdown != null && this.openDropdown != button) {
@@ -90,6 +120,8 @@ public class MacroEditorScreen extends Screen implements MacroActionList.Dropdow
         if (menu != null && menu.getY() + menu.getHeight() > this.height) {
             menu.setY(button.getY() - menu.getHeight());
         }
+
+        this.hideRowsWhileMenuOpen();
     }
 
     @Override
@@ -97,6 +129,7 @@ public class MacroEditorScreen extends Screen implements MacroActionList.Dropdow
         if (this.openDropdown == button) {
             this.openDropdown = null;
         }
+        this.showRowsAfterMenu();
     }
 
     @Override
@@ -148,10 +181,19 @@ public class MacroEditorScreen extends Screen implements MacroActionList.Dropdow
                 columnY,
                 actionCount >= MacroSlotMode.MAX_ACTIONS ? 0xFFFF5555 : 0xFFA0A0A0,
                 false);
+    }
 
-        if (menu != null) {
-            menu.render(graphics, mouseX, mouseY, delta);
+    @Override
+    public void renderRadialOverlay(DrawContext graphics, int mouseX, int mouseY, float delta) {
+        DropdownMenuWidget<SlotMode> menu = this.getOpenMenu();
+        if (menu == null) {
+            return;
         }
+
+        // 1.21.4: draw after the screen has fully submitted its content, otherwise the list's rows bleed
+        // through the panel (GUI is flushed per RenderLayer).
+        graphics.draw();
+        menu.render(graphics, mouseX, mouseY, delta);
     }
 
     // --- Input ---

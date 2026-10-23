@@ -3,16 +3,15 @@ package dev.velolib.radial.render;
 import com.mojang.brigadier.StringReader;
 import dev.velolib.radial.api.RadialSlot;
 import dev.velolib.radial.util.PhosphorIconCache;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.command.argument.ItemStringReader;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -59,7 +58,7 @@ public final class SlotRenderHelper {
                             if (parts.length >= 3) {
                                 int hbIndex = Integer.parseInt(parts[2]);
                                 if (hbIndex >= 0 && hbIndex < 9) {
-                                    return inv.getMainStacks().get(hbIndex);
+                                    return inv.main.get(hbIndex);
                                 }
                             }
                             break;
@@ -68,7 +67,7 @@ public final class SlotRenderHelper {
                             if (parts.length >= 3) {
                                 int invIndex = Integer.parseInt(parts[2]);
                                 if (invIndex >= 0 && invIndex < 27) {
-                                    return inv.getMainStacks().get(invIndex + 9);
+                                    return inv.main.get(invIndex + 9);
                                 }
                             }
                             break;
@@ -240,12 +239,15 @@ public final class SlotRenderHelper {
                 return;
             }
 
-            Optional<StatusEffect> effect = Registries.STATUS_EFFECT.getOptionalValue(id);
-            effect.ifPresent(value -> {
+            // 1.21.4: the GUI atlas (atlases/gui.json) only contains gui/sprites, so mob_effect/* is not
+            // reachable through drawGuiTexture - the sprite has to come from the mob_effect atlas.
+            Registries.STATUS_EFFECT.getEntry(id).ifPresent(entry -> {
                 // Drawn at the sprite's native 18px so it stays crisp
                 int offset = (size - 18) / 2;
-                // Yarn 1.21.11 DrawContext has no tinted gui-sprite overload; draw untinted like EffectIconTab
-                graphics.drawGuiTexture(RenderPipelines.GUI_TEXTURED, effectSprite(id), x + offset, y + offset, 18, 18);
+                Sprite sprite = MinecraftClient.getInstance()
+                        .getStatusEffectSpriteManager()
+                        .getSprite(entry);
+                graphics.drawSpriteStretched(RenderLayer::getGuiTextured, sprite, x + offset, y + offset, 18, 18);
             });
             return;
         }

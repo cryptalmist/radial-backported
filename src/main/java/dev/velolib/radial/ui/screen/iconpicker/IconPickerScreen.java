@@ -115,8 +115,15 @@ public class IconPickerScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(DrawContext graphics, int mouseX, int mouseY, float delta) {
+        // No-op on purpose: the backdrop (blur + darkening) is applied at the top of render().
+        // 1.21.4's applyBlur() runs immediately, so doing it inside super.render() would blur the
+        // tab content that render() already drew.
+    }
+
+    @Override
     public void render(DrawContext graphics, int mouseX, int mouseY, float delta) {
-        graphics.fillGradient(0, 0, width, height, 0xC0101010, 0xD0101010);
+        super.renderBackground(graphics, mouseX, mouseY, delta);
 
         // Let the tab render its background/custom UI
         currentTab.render(graphics, mouseX, mouseY, delta);

@@ -4,12 +4,13 @@ import dev.velolib.radial.RadialClient;
 import dev.velolib.radial.config.RadialConfig;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import org.joml.Quaternionf;
 
 /**
  * A highly optimized, asynchronous, texture-based renderer for radial menu sectors (donut slices).
@@ -162,18 +163,18 @@ public class DonutRenderer implements AutoCloseable {
             return;
         }
 
-        graphics.getMatrices().pushMatrix();
-        graphics.getMatrices().translate(cx, cy);
-        graphics.getMatrices().rotate(slotAngle);
-        graphics.getMatrices().translate(push * clampedEase, 0);
-        graphics.getMatrices().scale(clampedEase / resScale, clampedEase / resScale);
+        graphics.getMatrices().push();
+        graphics.getMatrices().translate(cx, cy, 0.0f);
+        graphics.getMatrices().multiply(new Quaternionf().rotateZ(slotAngle));
+        graphics.getMatrices().translate(push * clampedEase, 0.0f, 0.0f);
+        graphics.getMatrices().scale(clampedEase / resScale, clampedEase / resScale, 1.0f);
 
         int offset = -texSize / 2;
         Identifier texture = highlighted ? hotTexId : baseTexId;
         int alpha = MathHelper.clamp((int) (clampedEase * 255.0f + 0.5f), 0, 255);
 
         graphics.drawTexture(
-                RenderPipelines.GUI_TEXTURED,
+                RenderLayer::getGuiTextured,
                 texture,
                 offset,
                 offset,
@@ -185,7 +186,7 @@ public class DonutRenderer implements AutoCloseable {
                 texSize,
                 (alpha << 24) | 0xFFFFFF);
 
-        graphics.getMatrices().popMatrix();
+        graphics.getMatrices().pop();
     }
 
     /**
@@ -255,8 +256,9 @@ public class DonutRenderer implements AutoCloseable {
 
                             this.texSize = targetTexSize;
 
-                            this.baseTexture = new NativeImageBackedTexture(() -> "", images[0]);
-                            this.hotTexture = new NativeImageBackedTexture(() -> "", images[1]);
+                            // 1.21.4: NativeImageBackedTexture has no Supplier-named constructor, pass the image only
+                            this.baseTexture = new NativeImageBackedTexture(images[0]);
+                            this.hotTexture = new NativeImageBackedTexture(images[1]);
                             this.baseTexture.upload();
                             this.hotTexture.upload();
 

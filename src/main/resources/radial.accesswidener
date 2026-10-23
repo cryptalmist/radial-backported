@@ -1,2 +1,3 @@
 accessWidener v1 named
 accessible method net/minecraft/client/Keyboard processF3 (I)Z
+accessible method net/minecraft/client/texture/NativeImage setColor (III)V

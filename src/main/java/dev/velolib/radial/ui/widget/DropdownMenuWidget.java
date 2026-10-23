@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.function.Function;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -91,7 +91,11 @@ public class DropdownMenuWidget<T> extends ClickableWidget {
         MinecraftClient mc = MinecraftClient.getInstance();
         TextRenderer textRenderer = mc.textRenderer;
 
-        graphics.drawGuiTexture(RenderPipelines.GUI_TEXTURED, SPRITE_HIGHLIGHTED, getX(), getY(), width, height);
+        // 1.21.4: widget/text_field_highlighted is a 9-sliced black box with a white border, so the panel
+        // only needs the sprite; the fill below is kept as a harmless solid base.
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF101010);
+
+        graphics.drawGuiTexture(RenderLayer::getGuiTextured, SPRITE_HIGHLIGHTED, getX(), getY(), width, height);
 
         graphics.enableScissor(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1);
 
@@ -110,7 +114,7 @@ public class DropdownMenuWidget<T> extends ClickableWidget {
 
             if (isItemHovered) {
                 graphics.drawGuiTexture(
-                        RenderPipelines.GUI_TEXTURED, SPRITE_HIGHLIGHTED, getX(), itemY, width, itemHeight);
+                        RenderLayer::getGuiTextured, SPRITE_HIGHLIGHTED, getX(), itemY, width, itemHeight);
             }
 
             Text text = labelMapper.apply(option);

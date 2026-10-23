@@ -263,11 +263,8 @@ public class MacroActionList extends ElementListWidget<MacroActionList.Row> {
 
         super.renderWidget(graphics, mouseX, mouseY, delta);
 
-        if (this.draggedEntry != null) {
-        } else if (this.isMouseOver(mouseX, mouseY)) {
-            if (this.getEntryAtPosition(mouseX, mouseY) instanceof ActionEntry hovered
-                    && hovered.isOverHandle(mouseX, mouseY)) {}
-        }
+        // 1.21.4 has no cursor API (DrawContext#setCursor / StandardCursors are 1.21.9+), so the drag
+        // handle and the "not allowed" cursor feedback that the 1.21.11 baseline had are gone here.
     }
 
     @Override
